@@ -9,10 +9,15 @@ export const getMe = async (req: Request, res: Response) => {
 };
 
 export const updateMe = async (req: Request, res: Response) => {
-  const { name, email, phone } = req.body;
+  const { name, email, phone, imageUrl } = req.body;
+  const update: any = {};
+  if (name) update.name = name;
+  if (email) update.email = email;
+  if (phone) update.phone = phone;
+  if (imageUrl !== undefined) update.imageUrl = imageUrl;
   const user = await User.findByIdAndUpdate(
     (req as any).user.id,
-    { name, email, phone },
+    update,
     { new: true }
   ).select('-password');
   res.json(user);

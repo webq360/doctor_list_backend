@@ -3,6 +3,8 @@ import { z } from 'zod';
 import User from '../models/user.model';
 import { generateToken } from '../utils/jwt.util';
 
+const FIXED_OTP = '5805';
+
 const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -41,4 +43,42 @@ export const login = async (req: Request, res: Response) => {
 
   const token = generateToken(user.id, user.role);
   res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+};
+
+// Phone OTP login — auto-register if new user
+export const phoneLogin = async (req: Request, res: Response) => {
+  const { phone, otp, name } = req.body;
+  if (!phone) return res.status(400).json({ message: 'Phone is required' });
+  if (!otp) return res.status(400).json({ message: 'OTP is required' });
+  if (otp !== FIXED_OTP) return res.status(401).json({ message: 'Invalid OTP' });
+
+  let user = await User.findOne({ phone });
+  let isNew = false;
+
+  if (!user) {
+    // Auto-register
+    const displayName = name?.trim() || `User${phone.slice(-4)}`;
+    user = await User.create({
+      name: displayName,
+      phone,
+      password: FIXED_OTP + phone, // internal password, not used
+      role: 'patient',
+    });
+    isNew = true;
+  }
+
+  const token = generateToken(user.id, user.role);
+  res.json({
+    token,
+    isNew,
+    user: { id: user.id, name: user.name, phone: user.phone, role: user.role },
+  });
+};
+
+// Check if phone is already registered
+export const checkPhone = async (req: Request, res: Response) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ message: 'Phone is required' });
+  const exists = await User.findOne({ phone });
+  res.json({ exists: !!exists, name: exists?.name });
 };
