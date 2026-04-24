@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const appointment_controller_1 = require("../controllers/appointment.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.protect);
+router.post('/', (0, auth_middleware_1.authorize)('patient'), appointment_controller_1.bookAppointment);
+router.get('/', appointment_controller_1.getMyAppointments);
+router.get('/all', (0, auth_middleware_1.authorize)('admin'), appointment_controller_1.getAllAppointments);
+router.get('/doctor/:doctorId', (0, auth_middleware_1.authorize)('doctor', 'admin'), appointment_controller_1.getDoctorAppointments);
+router.patch('/:id/status', (0, auth_middleware_1.authorize)('doctor', 'admin'), appointment_controller_1.updateAppointmentStatus);
+exports.default = router;

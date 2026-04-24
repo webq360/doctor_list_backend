@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const ambulance_controller_1 = require("../controllers/ambulance.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.get('/', ambulance_controller_1.getAllAmbulances);
+router.post('/book', auth_middleware_1.protect, ambulance_controller_1.bookAmbulance);
+router.post('/', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), ambulance_controller_1.registerAmbulance);
+router.patch('/:id/status', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), ambulance_controller_1.updateAmbulanceStatus);
+exports.default = router;

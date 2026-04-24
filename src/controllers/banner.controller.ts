@@ -1,0 +1,63 @@
+import { Response, Request } from 'express';
+import Banner from '../models/banner.model';
+import { AuthRequest } from '../middleware/auth.middleware';
+
+export const getBanners = async (req: Request, res: Response) => {
+  try {
+    const { category, division, district, upazila } = req.query;
+    const filter: any = { isActive: true };
+    if (category) filter.category = category;
+    if (division) filter['location.division'] = division;
+    if (district) filter['location.district'] = district;
+    if (upazila) filter['location.upazila'] = upazila;
+    const banners = await Banner.find(filter).sort({ order: 1 });
+    res.json(banners);
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getAllBannersAdmin = async (req: Request, res: Response) => {
+  try {
+    const { category } = req.query;
+    const filter: any = {};
+    if (category) filter.category = category;
+    const banners = await Banner.find(filter).sort({ category: 1, order: 1 });
+    res.json(banners);
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const createBanner = async (req: AuthRequest, res: Response) => {
+  try {
+    const { imageUrl, title, order, category, division, district, upazila } = req.body;
+    if (!imageUrl) return res.status(400).json({ message: 'imageUrl is required' });
+    if (!category) return res.status(400).json({ message: 'Category is required' });
+    const banner = await Banner.create({
+      imageUrl, title, order: order || 0, category,
+      location: category === 'doctor_list' ? { division, district, upazila } : undefined,
+    });
+    res.status(201).json(banner);
+  } catch (err: any) {
+    res.status(500).json({ message: err?.message || 'Server error' });
+  }
+};
+
+export const deleteBanner = async (req: AuthRequest, res: Response) => {
+  try {
+    await Banner.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Banner deleted' });
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateBanner = async (req: AuthRequest, res: Response) => {
+  try {
+    const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(banner);
+  } catch {
+    res.status(500).json({ message: 'Server error' });
+  }
+};

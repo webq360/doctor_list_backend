@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const doctor_controller_1 = require("../controllers/doctor.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.get('/', doctor_controller_1.getAllDoctors);
+router.get('/:id', doctor_controller_1.getDoctorById);
+router.post('/profile', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('doctor'), doctor_controller_1.createDoctorProfile);
+router.put('/profile', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('doctor'), doctor_controller_1.updateDoctorProfile);
+router.patch('/:id/approve', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), doctor_controller_1.approveDoctor);
+exports.default = router;
