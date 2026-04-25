@@ -10,4 +10,16 @@ router.get('/:id', hospital_controller_1.getHospitalById);
 router.post('/', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.createHospital);
 router.put('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.updateHospital);
 router.delete('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.deleteHospital);
+// Doctors
+router.get('/:id/doctors', hospital_controller_1.getHospitalDoctors);
+router.post('/:id/doctors', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.addDoctorToHospital);
+router.delete('/:id/doctors/:doctorId', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.removeDoctorFromHospital);
+// Ambulances
+router.get('/:id/ambulances', hospital_controller_1.getHospitalAmbulances);
+router.post('/:id/ambulances', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.addAmbulanceToHospital);
+router.delete('/:id/ambulances/:ambulanceId', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.removeAmbulanceFromHospital);
+// Services
+router.get('/:id/services', hospital_controller_1.getHospitalServices);
+router.post('/:id/services', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.addHospitalService);
+router.delete('/:id/services/:serviceId', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.removeHospitalService);
 exports.default = router;

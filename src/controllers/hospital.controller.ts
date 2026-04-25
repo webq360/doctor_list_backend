@@ -30,7 +30,15 @@ export const createHospital = async (req: Request, res: Response) => {
 };
 
 export const getAllHospitals = async (req: Request, res: Response) => {
-  const hospitals = await Hospital.find().populate('doctors');
+  const { name, division, district, upazila } = req.query;
+  const filter: Record<string, unknown> = {};
+
+  if (division) filter['division'] = new RegExp(division as string, 'i');
+  if (district) filter['district'] = new RegExp(district as string, 'i');
+  if (upazila) filter['upazila'] = new RegExp(upazila as string, 'i');
+  if (name) filter['name'] = new RegExp(name as string, 'i');
+
+  const hospitals = await Hospital.find(filter);
   res.json(hospitals);
 };
 

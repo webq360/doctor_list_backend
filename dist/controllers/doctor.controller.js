@@ -3,9 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.approveDoctor = exports.updateDoctorProfile = exports.getDoctorById = exports.getAllDoctors = exports.createDoctorProfile = void 0;
+exports.deleteDoctor = exports.adminCreateDoctor = exports.approveDoctor = exports.updateDoctorProfile = exports.getDoctorById = exports.getAllDoctors = exports.createDoctorProfile = void 0;
 const zod_1 = require("zod");
 const doctor_model_1 = __importDefault(require("../models/doctor.model"));
+const user_model_1 = __importDefault(require("../models/user.model"));
 const doctorSchema = zod_1.z.object({
     specialization: zod_1.z.string().min(2),
     experience: zod_1.z.number().min(0),
@@ -57,3 +58,45 @@ const approveDoctor = async (req, res) => {
     res.json({ message: 'Doctor approved', doctor });
 };
 exports.approveDoctor = approveDoctor;
+const adminCreateDoctor = async (req, res) => {
+    try {
+        const { name, email, phone, password, specializations, experience, fees, bio, hospitalId, profileImage, location, schedule } = req.body;
+        if (!name || !email || !phone || !password || !fees) {
+            return res.status(400).json({ message: 'name, email, phone, password, fees are required' });
+        }
+        const exists = await user_model_1.default.findOne({ email });
+        if (exists)
+            return res.status(409).json({ message: 'Email already registered' });
+        const user = await user_model_1.default.create({ name, email, phone, password, role: 'doctor' });
+        const doctor = await doctor_model_1.default.create({
+            userId: user._id,
+            specializations: Array.isArray(specializations) ? specializations : (specializations ? [specializations] : []),
+            experience: Number(experience) || 0,
+            fees: Number(fees),
+            bio,
+            hospitalId: hospitalId || undefined,
+            profileImage,
+            location,
+            schedule: schedule || [],
+            isApproved: true,
+        });
+        const populated = await doctor_model_1.default.findById(doctor._id).populate('userId', 'name email phone').populate('hospitalId', 'name');
+        res.status(201).json(populated);
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.adminCreateDoctor = adminCreateDoctor;
+const deleteDoctor = async (req, res) => {
+    try {
+        const doctor = await doctor_model_1.default.findByIdAndDelete(req.params.id);
+        if (!doctor)
+            return res.status(404).json({ message: 'Doctor not found' });
+        res.json({ message: 'Doctor deleted' });
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.deleteDoctor = deleteDoctor;

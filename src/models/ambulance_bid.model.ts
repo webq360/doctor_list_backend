@@ -14,7 +14,7 @@ const ambulanceBidSchema = new Schema<IAmbulanceBid>(
   {
     requestId: { type: Schema.Types.ObjectId, ref: 'AmbulanceRequest', required: true },
     ambulanceUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital', required: true },
+    hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital' },
     estimatedTime: { type: Number, required: true },
     estimatedDistance: { type: Number, required: true },
     fare: { type: Number, required: true },

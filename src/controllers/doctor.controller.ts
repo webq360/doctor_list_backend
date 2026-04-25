@@ -25,11 +25,24 @@ export const createDoctorProfile = async (req: AuthRequest, res: Response) => {
 };
 
 export const getAllDoctors = async (req: Request, res: Response) => {
-  const { specialization } = req.query;
+  const { name, specialization, division, district, upazila } = req.query;
   const filter: Record<string, unknown> = { isApproved: true };
-  if (specialization) filter.specialization = new RegExp(specialization as string, 'i');
 
-  const doctors = await Doctor.find(filter).populate('userId', 'name email phone').populate('hospitalId', 'name address');
+  if (specialization) filter['specializations'] = { $elemMatch: { $regex: specialization as string, $options: 'i' } };
+  if (division) filter['location.division'] = new RegExp(division as string, 'i');
+  if (district) filter['location.district'] = new RegExp(district as string, 'i');
+  if (upazila) filter['location.upazila'] = new RegExp(upazila as string, 'i');
+
+  let doctors = await Doctor.find(filter)
+    .populate('userId', 'name email phone')
+    .populate('hospitalId', 'name address logo');
+
+  // Filter by name (from populated userId)
+  if (name) {
+    const n = (name as string).toLowerCase();
+    doctors = doctors.filter((d: any) => d.userId?.name?.toLowerCase().includes(n));
+  }
+
   res.json(doctors);
 };
 

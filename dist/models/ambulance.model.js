@@ -35,10 +35,22 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const ambulanceSchema = new mongoose_1.Schema({
+    ambulanceName: { type: String, required: true },
     driverName: { type: String, required: true },
     phone: { type: String, required: true },
+    email: { type: String },
     vehicleNumber: { type: String, required: true, unique: true },
+    ambulanceType: { type: String, enum: ['AC', 'Non-AC'], required: true },
+    address: { type: String, required: true },
     status: { type: String, enum: ['available', 'busy', 'inactive'], default: 'available' },
     hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    driverImage: { type: String },
+    ambulanceImage: { type: String },
+    documents: {
+        drivingLicence: { type: String },
+        nid: { type: String },
+        carDocument: { type: String },
+    },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Ambulance', ambulanceSchema);

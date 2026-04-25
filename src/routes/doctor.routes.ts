@@ -46,4 +46,25 @@ router.put('/:id', protect, authorize('admin'), async (req: any, res: any) => {
 });
 router.delete('/:id', protect, authorize('admin'), deleteDoctor);
 
+// Rate a doctor (any logged-in user)
+router.post('/:id/rate', protect, async (req: any, res: any) => {
+  try {
+    const Doctor = require('../models/doctor.model').default;
+    const { rating } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+    const doctor = await Doctor.findById(req.params.id);
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+    const newCount = doctor.ratingCount + 1;
+    const newRating = ((doctor.rating * doctor.ratingCount) + Number(rating)) / newCount;
+    doctor.rating = Math.round(newRating * 10) / 10;
+    doctor.ratingCount = newCount;
+    await doctor.save();
+    res.json({ rating: doctor.rating, ratingCount: doctor.ratingCount });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

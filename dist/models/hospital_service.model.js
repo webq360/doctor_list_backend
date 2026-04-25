@@ -34,19 +34,13 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const hospitalSchema = new mongoose_1.Schema({
+const hospitalServiceSchema = new mongoose_1.Schema({
+    hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital', required: true },
     name: { type: String, required: true },
-    address: { type: String, required: true },
-    division: { type: String },
-    district: { type: String },
-    upazila: { type: String },
-    location: {
-        lat: { type: Number },
-        lng: { type: Number },
-    },
-    contact: { type: String, required: true },
-    logo: { type: String },
-    coverImage: { type: String },
-    doctors: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor' }],
+    shortTitle: { type: String },
+    about: { type: String },
+    whatWeOffer: [{ type: String }],
+    availableDoctors: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor' }],
+    iconUrl: { type: String },
 }, { timestamps: true });
-exports.default = mongoose_1.default.model('Hospital', hospitalSchema);
+exports.default = mongoose_1.default.model('HospitalService', hospitalServiceSchema);

@@ -34,19 +34,15 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const hospitalSchema = new mongoose_1.Schema({
+const physiotherapyCenterSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
     address: { type: String, required: true },
     division: { type: String },
     district: { type: String },
     upazila: { type: String },
-    location: {
-        lat: { type: Number },
-        lng: { type: Number },
-    },
+    location: { lat: { type: Number }, lng: { type: Number } },
     contact: { type: String, required: true },
     logo: { type: String },
     coverImage: { type: String },
-    doctors: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor' }],
 }, { timestamps: true });
-exports.default = mongoose_1.default.model('Hospital', hospitalSchema);
+exports.default = mongoose_1.default.model('PhysiotherapyCenter', physiotherapyCenterSchema);

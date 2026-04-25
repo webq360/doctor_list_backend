@@ -34,19 +34,13 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const hospitalSchema = new mongoose_1.Schema({
-    name: { type: String, required: true },
-    address: { type: String, required: true },
-    division: { type: String },
-    district: { type: String },
-    upazila: { type: String },
-    location: {
-        lat: { type: Number },
-        lng: { type: Number },
-    },
-    contact: { type: String, required: true },
-    logo: { type: String },
-    coverImage: { type: String },
-    doctors: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor' }],
+const ambulanceBidSchema = new mongoose_1.Schema({
+    requestId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'AmbulanceRequest', required: true },
+    ambulanceUserId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+    estimatedTime: { type: Number, required: true },
+    estimatedDistance: { type: Number, required: true },
+    fare: { type: Number, required: true },
+    status: { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
 }, { timestamps: true });
-exports.default = mongoose_1.default.model('Hospital', hospitalSchema);
+exports.default = mongoose_1.default.model('AmbulanceBid', ambulanceBidSchema);

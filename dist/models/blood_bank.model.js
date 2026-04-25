@@ -34,19 +34,16 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const hospitalSchema = new mongoose_1.Schema({
+const bloodBankSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
+    contact: { type: String, required: true },
     address: { type: String, required: true },
     division: { type: String },
     district: { type: String },
     upazila: { type: String },
-    location: {
-        lat: { type: Number },
-        lng: { type: Number },
-    },
-    contact: { type: String, required: true },
-    logo: { type: String },
-    coverImage: { type: String },
-    doctors: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor' }],
+    location: { lat: { type: Number }, lng: { type: Number } },
+    availableGroups: [{ type: String, enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] }],
+    hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
+    isActive: { type: Boolean, default: true },
 }, { timestamps: true });
-exports.default = mongoose_1.default.model('Hospital', hospitalSchema);
+exports.default = mongoose_1.default.model('BloodBank', bloodBankSchema);

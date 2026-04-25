@@ -36,8 +36,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const doctorSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-    specialization: { type: String, required: true },
-    experience: { type: Number, required: true },
+    specializations: [{ type: String }],
+    experience: { type: Number, default: 0 },
     hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
     schedule: [
         {
@@ -48,6 +48,12 @@ const doctorSchema = new mongoose_1.Schema({
     ],
     fees: { type: Number, required: true },
     bio: { type: String },
+    profileImage: { type: String },
+    location: {
+        division: { type: String },
+        district: { type: String },
+        upazila: { type: String },
+    },
     isApproved: { type: Boolean, default: false },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Doctor', doctorSchema);

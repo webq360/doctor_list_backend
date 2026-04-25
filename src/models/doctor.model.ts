@@ -17,6 +17,8 @@ export interface IDoctor extends Document {
   profileImage?: string;
   location?: { division?: string; district?: string; upazila?: string };
   isApproved: boolean;
+  rating: number;
+  ratingCount: number;
 }
 
 const doctorSchema = new Schema<IDoctor>(
@@ -41,6 +43,8 @@ const doctorSchema = new Schema<IDoctor>(
       upazila: { type: String },
     },
     isApproved: { type: Boolean, default: false },
+    rating: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
