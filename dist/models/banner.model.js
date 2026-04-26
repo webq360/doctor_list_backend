@@ -39,7 +39,16 @@ const bannerSchema = new mongoose_1.Schema({
     title: { type: String },
     isActive: { type: Boolean, default: true },
     order: { type: Number, default: 0 },
-    category: { type: String, enum: ['home_slider', 'doctor_list', 'ambulance'], required: true },
+    category: {
+        type: String,
+        enum: [
+            'home_slider', 'doctor_list', 'ambulance',
+            'hospital', 'blood_bank', 'physiotherapy',
+            'eye_care', 'dental_clinic', 'drug_rehabilitation',
+            'hearing_aid',
+        ],
+        required: true,
+    },
     location: {
         division: { type: String },
         district: { type: String },

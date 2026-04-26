@@ -42,5 +42,8 @@ const hospitalServiceSchema = new mongoose_1.Schema({
     whatWeOffer: [{ type: String }],
     availableDoctors: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor' }],
     iconUrl: { type: String },
+    imageUrl: { type: String },
+    serviceImageUrl: { type: String },
+    ourService: { type: String },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('HospitalService', hospitalServiceSchema);

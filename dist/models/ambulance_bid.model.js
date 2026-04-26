@@ -37,7 +37,7 @@ const mongoose_1 = __importStar(require("mongoose"));
 const ambulanceBidSchema = new mongoose_1.Schema({
     requestId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'AmbulanceRequest', required: true },
     ambulanceUserId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
-    hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+    hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
     estimatedTime: { type: Number, required: true },
     estimatedDistance: { type: Number, required: true },
     fare: { type: Number, required: true },

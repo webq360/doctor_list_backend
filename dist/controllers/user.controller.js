@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUser = exports.updateUser = exports.getUserById = exports.getAllUsers = exports.changePassword = exports.updateMe = exports.getMe = void 0;
+exports.saveFcmToken = exports.deleteUser = exports.updateUser = exports.getUserById = exports.getAllUsers = exports.changePassword = exports.updateMe = exports.getMe = void 0;
 const user_model_1 = __importDefault(require("../models/user.model"));
 const getMe = async (req, res) => {
     const user = await user_model_1.default.findById(req.user.id).select('-password');
@@ -67,3 +67,11 @@ const deleteUser = async (req, res) => {
     res.json({ message: 'User deleted' });
 };
 exports.deleteUser = deleteUser;
+const saveFcmToken = async (req, res) => {
+    const { fcmToken } = req.body;
+    if (!fcmToken)
+        return res.status(400).json({ message: 'fcmToken is required' });
+    await user_model_1.default.findByIdAndUpdate(req.user.id, { fcmToken });
+    res.json({ message: 'FCM token saved' });
+};
+exports.saveFcmToken = saveFcmToken;

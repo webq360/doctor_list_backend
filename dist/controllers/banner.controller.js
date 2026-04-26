@@ -11,12 +11,21 @@ const getBanners = async (req, res) => {
         const filter = { isActive: true };
         if (category)
             filter.category = category;
-        if (division)
-            filter['location.division'] = division;
-        if (district)
-            filter['location.district'] = district;
-        if (upazila)
-            filter['location.upazila'] = upazila;
+        if (upazila || district || division) {
+            // Return banners that match location OR have no location set (global banners)
+            const locationConditions = [
+                { location: { $exists: false } },
+                { 'location.division': { $exists: false } },
+                { 'location.division': null },
+            ];
+            if (division)
+                locationConditions.push({ 'location.division': division, 'location.district': { $in: [null, undefined, ''] }, 'location.upazila': { $in: [null, undefined, ''] } });
+            if (district)
+                locationConditions.push({ 'location.division': division, 'location.district': district, 'location.upazila': { $in: [null, undefined, ''] } });
+            if (upazila)
+                locationConditions.push({ 'location.division': division, 'location.district': district, 'location.upazila': upazila });
+            filter.$or = locationConditions;
+        }
         const banners = await banner_model_1.default.find(filter).sort({ order: 1 });
         res.json(banners);
     }
@@ -48,7 +57,7 @@ const createBanner = async (req, res) => {
             return res.status(400).json({ message: 'Category is required' });
         const banner = await banner_model_1.default.create({
             imageUrl, title, order: order || 0, category,
-            location: category === 'doctor_list' ? { division, district, upazila } : undefined,
+            location: (division) ? { division, district, upazila } : undefined,
         });
         res.status(201).json(banner);
     }

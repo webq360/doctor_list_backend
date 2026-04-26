@@ -40,12 +40,13 @@ const mongoose_1 = __importStar(require("mongoose"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const userSchema = new mongoose_1.Schema({
     name: { type: String, required: true, trim: true },
-    email: { type: String, sparse: true, unique: true, lowercase: true },
+    email: { type: String, sparse: true, unique: true, lowercase: true, default: undefined },
     phone: { type: String, required: true, unique: true },
     password: { type: String, required: true, minlength: 6 },
     imageUrl: { type: String },
     role: { type: String, enum: ['patient', 'doctor', 'admin', 'ambulance_user'], default: 'patient' },
     isActive: { type: Boolean, default: true },
+    fcmToken: { type: String },
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password'))

@@ -34,18 +34,20 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const scheduleSchema = new mongoose_1.Schema({ day: String, startTime: String, endTime: String }, { _id: false });
 const doctorSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     specializations: [{ type: String }],
     experience: { type: Number, default: 0 },
     hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
-    schedule: [
+    hospitalIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' }],
+    hospitalSchedules: [
         {
-            day: { type: String, required: true },
-            startTime: { type: String, required: true },
-            endTime: { type: String, required: true },
+            hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+            schedule: [scheduleSchema],
         },
     ],
+    schedule: [scheduleSchema],
     fees: { type: Number, required: true },
     bio: { type: String },
     profileImage: { type: String },
@@ -55,5 +57,7 @@ const doctorSchema = new mongoose_1.Schema({
         upazila: { type: String },
     },
     isApproved: { type: Boolean, default: false },
+    rating: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Doctor', doctorSchema);

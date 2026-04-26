@@ -48,12 +48,15 @@ exports.login = login;
 // Phone OTP login — auto-register if new user
 const phoneLogin = async (req, res) => {
     const { phone, otp, name } = req.body;
+    console.log('[phoneLogin] phone:', phone, '| otp:', otp);
     if (!phone)
         return res.status(400).json({ message: 'Phone is required' });
     if (!otp)
         return res.status(400).json({ message: 'OTP is required' });
-    if (otp !== FIXED_OTP)
+    if (otp !== FIXED_OTP) {
+        console.log('[phoneLogin] OTP mismatch — received:', otp, '| expected:', FIXED_OTP);
         return res.status(401).json({ message: 'Invalid OTP' });
+    }
     let user = await user_model_1.default.findOne({ phone });
     let isNew = false;
     if (!user) {
@@ -62,7 +65,8 @@ const phoneLogin = async (req, res) => {
         user = await user_model_1.default.create({
             name: displayName,
             phone,
-            password: FIXED_OTP + phone, // internal password, not used
+            email: undefined,
+            password: FIXED_OTP + phone,
             role: 'patient',
         });
         isNew = true;

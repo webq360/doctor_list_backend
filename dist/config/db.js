@@ -8,5 +8,13 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const connectDB = async () => {
     const conn = await mongoose_1.default.connect(process.env.MONGO_URI);
     console.log(`MongoDB connected: ${conn.connection.host}`);
+    // Fix: drop non-sparse email index if it exists (causes null duplicate error for phone-only users)
+    try {
+        await conn.connection.collection('users').dropIndex('email_1');
+        console.log('[DB] Dropped old email_1 index');
+    }
+    catch (_) {
+        // Index may not exist or already sparse — ignore
+    }
 };
 exports.connectDB = connectDB;

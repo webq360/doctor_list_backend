@@ -7,6 +7,7 @@ const router = (0, express_1.Router)();
 router.get('/me', auth_middleware_1.protect, user_controller_1.getMe);
 router.put('/me', auth_middleware_1.protect, user_controller_1.updateMe);
 router.put('/me/password', auth_middleware_1.protect, user_controller_1.changePassword);
+router.post('/fcm-token', auth_middleware_1.protect, user_controller_1.saveFcmToken);
 router.use(auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'));
 router.get('/', user_controller_1.getAllUsers);
 router.get('/:id', user_controller_1.getUserById);

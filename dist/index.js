@@ -20,6 +20,11 @@ const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const blood_bank_routes_1 = __importDefault(require("./routes/blood_bank.routes"));
 const physiotherapy_center_routes_1 = __importDefault(require("./routes/physiotherapy_center.routes"));
 const notification_routes_1 = __importDefault(require("./routes/notification.routes"));
+const eye_care_center_routes_1 = __importDefault(require("./routes/eye_care_center.routes"));
+const hearing_aid_center_routes_1 = __importDefault(require("./routes/hearing_aid_center.routes"));
+const dental_clinic_routes_1 = __importDefault(require("./routes/dental_clinic.routes"));
+const drug_rehabilitation_center_routes_1 = __importDefault(require("./routes/drug_rehabilitation_center.routes"));
+const disease_category_routes_1 = __importDefault(require("./routes/disease_category.routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
@@ -37,6 +42,13 @@ app.use('/api/v1/upload', upload_routes_1.default);
 app.use('/api/v1/blood-banks', blood_bank_routes_1.default);
 app.use('/api/v1/physiotherapy-centers', physiotherapy_center_routes_1.default);
 app.use('/api/v1/notifications', notification_routes_1.default);
+app.use('/api/v1/eye-care-centers', eye_care_center_routes_1.default);
+app.use('/api/v1/hearing-aid-centers', hearing_aid_center_routes_1.default);
+app.use('/api/v1/dental-clinics', dental_clinic_routes_1.default);
+app.use('/api/v1/drug-rehabilitation-centers', drug_rehabilitation_center_routes_1.default);
+app.use('/api/v1/disease-categories', disease_category_routes_1.default);
+// Alias: admin dashboard uses /diseases, Flutter uses /disease-categories — both point to same handler
+app.use('/api/v1/diseases', disease_category_routes_1.default);
 app.use(error_middleware_1.errorHandler);
 const PORT = process.env.PORT || 5000;
 (0, db_1.connectDB)().then(() => {

@@ -37,6 +37,7 @@ const mongoose_1 = __importStar(require("mongoose"));
 const appointmentSchema = new mongoose_1.Schema({
     patientId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
     doctorId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor', required: true },
+    hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
     date: { type: String, required: true },
     time: { type: String, required: true },
     status: {

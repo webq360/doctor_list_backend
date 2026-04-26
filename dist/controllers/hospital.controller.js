@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeHospitalService = exports.addHospitalService = exports.getHospitalServices = exports.removeAmbulanceFromHospital = exports.addAmbulanceToHospital = exports.getHospitalAmbulances = exports.removeDoctorFromHospital = exports.addDoctorToHospital = exports.getHospitalDoctors = exports.deleteHospital = exports.updateHospital = exports.getNearestHospitals = exports.getHospitalById = exports.getAllHospitals = exports.createHospital = void 0;
+exports.removeHospitalService = exports.updateHospitalService = exports.addHospitalService = exports.getHospitalServices = exports.removeAmbulanceFromHospital = exports.addAmbulanceToHospital = exports.getHospitalAmbulances = exports.getDoctorHospitalSchedule = exports.setDoctorHospitalSchedule = exports.removeDoctorFromHospital = exports.addDoctorToHospital = exports.getHospitalDoctors = exports.deleteHospital = exports.updateHospital = exports.getNearestHospitals = exports.getHospitalById = exports.getAllHospitals = exports.createHospital = void 0;
 const zod_1 = require("zod");
 const hospital_model_1 = __importDefault(require("../models/hospital.model"));
 const doctor_model_1 = __importDefault(require("../models/doctor.model"));
@@ -35,7 +35,17 @@ const createHospital = async (req, res) => {
 };
 exports.createHospital = createHospital;
 const getAllHospitals = async (req, res) => {
-    const hospitals = await hospital_model_1.default.find().populate('doctors');
+    const { name, division, district, upazila } = req.query;
+    const filter = {};
+    if (division)
+        filter['division'] = new RegExp(division, 'i');
+    if (district)
+        filter['district'] = new RegExp(district, 'i');
+    if (upazila)
+        filter['upazila'] = new RegExp(upazila, 'i');
+    if (name)
+        filter['name'] = new RegExp(name, 'i');
+    const hospitals = await hospital_model_1.default.find(filter);
     res.json(hospitals);
 };
 exports.getAllHospitals = getAllHospitals;
@@ -79,7 +89,10 @@ const deleteHospital = async (req, res) => {
 exports.deleteHospital = deleteHospital;
 // --- Doctors ---
 const getHospitalDoctors = async (req, res) => {
-    const doctors = await doctor_model_1.default.find({ hospitalId: req.params.id }).populate('userId', 'name email phone');
+    // Find doctors assigned to this hospital (either via hospitalId or hospitalIds array)
+    const doctors = await doctor_model_1.default.find({
+        $or: [{ hospitalId: req.params.id }, { hospitalIds: req.params.id }]
+    }).populate('userId', 'name email phone');
     res.json(doctors);
 };
 exports.getHospitalDoctors = getHospitalDoctors;
@@ -87,17 +100,60 @@ const addDoctorToHospital = async (req, res) => {
     const { doctorId } = req.body;
     if (!doctorId)
         return res.status(400).json({ message: 'doctorId required' });
-    const doctor = await doctor_model_1.default.findByIdAndUpdate(doctorId, { hospitalId: req.params.id }, { new: true }).populate('userId', 'name email phone');
+    // Add to hospitalIds array (multi-hospital support) and keep hospitalId for backward compat
+    const doctor = await doctor_model_1.default.findByIdAndUpdate(doctorId, {
+        $addToSet: { hospitalIds: req.params.id },
+        $set: { hospitalId: req.params.id },
+    }, { new: true }).populate('userId', 'name email phone');
     if (!doctor)
         return res.status(404).json({ message: 'Doctor not found' });
     res.json(doctor);
 };
 exports.addDoctorToHospital = addDoctorToHospital;
 const removeDoctorFromHospital = async (req, res) => {
-    await doctor_model_1.default.findByIdAndUpdate(req.params.doctorId, { $unset: { hospitalId: 1 } });
+    await doctor_model_1.default.findByIdAndUpdate(req.params.doctorId, {
+        $pull: { hospitalIds: req.params.id },
+        $unset: { hospitalId: 1 },
+    });
     res.json({ message: 'Doctor removed' });
 };
 exports.removeDoctorFromHospital = removeDoctorFromHospital;
+// Set hospital-specific schedule for a doctor
+const setDoctorHospitalSchedule = async (req, res) => {
+    const { doctorId } = req.params;
+    const { schedule } = req.body; // array of { day, startTime, endTime }
+    if (!Array.isArray(schedule))
+        return res.status(400).json({ message: 'schedule array required' });
+    const doctor = await doctor_model_1.default.findById(doctorId);
+    if (!doctor)
+        return res.status(404).json({ message: 'Doctor not found' });
+    // Update or insert hospital-specific schedule
+    const existingIdx = doctor.hospitalSchedules?.findIndex((hs) => hs.hospitalId.toString() === req.params.id) ?? -1;
+    if (existingIdx >= 0) {
+        doctor.hospitalSchedules[existingIdx].schedule = schedule;
+    }
+    else {
+        if (!doctor.hospitalSchedules)
+            doctor.hospitalSchedules = [];
+        doctor.hospitalSchedules.push({ hospitalId: req.params.id, schedule });
+    }
+    await doctor.save();
+    res.json({ message: 'Schedule updated', schedule });
+};
+exports.setDoctorHospitalSchedule = setDoctorHospitalSchedule;
+// Get hospital-specific schedule for a doctor
+const getDoctorHospitalSchedule = async (req, res) => {
+    const { doctorId } = req.params;
+    const doctor = await doctor_model_1.default.findById(doctorId);
+    if (!doctor)
+        return res.status(404).json({ message: 'Doctor not found' });
+    const hospitalSchedule = doctor.hospitalSchedules?.find((hs) => hs.hospitalId.toString() === req.params.id);
+    const schedule = (hospitalSchedule?.schedule?.length ?? 0) > 0
+        ? hospitalSchedule.schedule
+        : doctor.schedule;
+    res.json({ schedule, fees: doctor.fees });
+};
+exports.getDoctorHospitalSchedule = getDoctorHospitalSchedule;
 // --- Ambulances ---
 const getHospitalAmbulances = async (req, res) => {
     const ambulances = await ambulance_model_1.default.find({ hospitalId: req.params.id });
@@ -127,7 +183,7 @@ const getHospitalServices = async (req, res) => {
 };
 exports.getHospitalServices = getHospitalServices;
 const addHospitalService = async (req, res) => {
-    const { name, shortTitle, about, whatWeOffer, availableDoctors, iconUrl } = req.body;
+    const { name, shortTitle, about, whatWeOffer, availableDoctors, iconUrl, imageUrl, serviceImageUrl, ourService } = req.body;
     if (!name)
         return res.status(400).json({ message: 'name required' });
     const service = await hospital_service_model_1.default.create({
@@ -135,14 +191,25 @@ const addHospitalService = async (req, res) => {
         name,
         shortTitle,
         about,
+        ourService,
         whatWeOffer: Array.isArray(whatWeOffer) ? whatWeOffer.filter(Boolean) : [],
         availableDoctors: Array.isArray(availableDoctors) ? availableDoctors : [],
         iconUrl,
+        imageUrl,
+        serviceImageUrl,
     });
     const populated = await service.populate({ path: 'availableDoctors', populate: { path: 'userId', select: 'name' } });
     res.status(201).json(populated);
 };
 exports.addHospitalService = addHospitalService;
+const updateHospitalService = async (req, res) => {
+    const { name, shortTitle, about, whatWeOffer, availableDoctors, iconUrl, imageUrl, serviceImageUrl, ourService } = req.body;
+    const service = await hospital_service_model_1.default.findByIdAndUpdate(req.params.serviceId, { name, shortTitle, about, ourService, whatWeOffer, availableDoctors, iconUrl, imageUrl, serviceImageUrl }, { new: true }).populate({ path: 'availableDoctors', populate: { path: 'userId', select: 'name' } });
+    if (!service)
+        return res.status(404).json({ message: 'Service not found' });
+    res.json(service);
+};
+exports.updateHospitalService = updateHospitalService;
 const removeHospitalService = async (req, res) => {
     await hospital_service_model_1.default.findByIdAndDelete(req.params.serviceId);
     res.json({ message: 'Service removed' });

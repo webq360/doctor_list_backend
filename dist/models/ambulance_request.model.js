@@ -41,8 +41,19 @@ const ambulanceRequestSchema = new mongoose_1.Schema({
         lng: { type: Number, required: true },
         address: { type: String, required: true },
     },
-    status: { type: String, enum: ['pending', 'bidding', 'accepted', 'completed', 'cancelled'], default: 'pending' },
+    destination: {
+        lat: { type: Number },
+        lng: { type: Number },
+        address: { type: String, required: true },
+    },
+    tripType: { type: String, enum: ['instant', 'scheduled'], default: 'instant' },
+    scheduledTime: { type: String },
+    status: { type: String, enum: ['pending', 'bidding', 'accepted', 'on_the_way', 'arrived', 'trip_started', 'completed', 'cancelled'], default: 'pending' },
     acceptedBidId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'AmbulanceBid' },
     notes: { type: String },
+    driverLocation: {
+        lat: { type: Number },
+        lng: { type: Number },
+    },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('AmbulanceRequest', ambulanceRequestSchema);
