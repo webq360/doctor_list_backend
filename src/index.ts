@@ -28,6 +28,10 @@ app.use(cors());
 app.use(express.json());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
+app.get('/', (_req, res) => {
+  res.send({ status: 'ok', message: 'Doctor List backend is running' });
+});
+
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/doctors', doctorRoutes);
