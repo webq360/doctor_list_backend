@@ -57,3 +57,10 @@ export const deleteUser = async (req: Request, res: Response) => {
   await User.findByIdAndDelete(req.params.id);
   res.json({ message: 'User deleted' });
 };
+
+export const saveFcmToken = async (req: Request, res: Response) => {
+  const { fcmToken } = req.body;
+  if (!fcmToken) return res.status(400).json({ message: 'fcmToken is required' });
+  await User.findByIdAndUpdate((req as any).user.id, { fcmToken });
+  res.json({ message: 'FCM token saved' });
+};

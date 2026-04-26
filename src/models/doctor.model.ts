@@ -6,12 +6,20 @@ interface ISchedule {
   endTime: string;
 }
 
+// Hospital-specific schedule: doctor can have different times at different hospitals
+interface IHospitalSchedule {
+  hospitalId: mongoose.Types.ObjectId;
+  schedule: ISchedule[];
+}
+
 export interface IDoctor extends Document {
   userId: mongoose.Types.ObjectId;
   specializations: string[];
   experience: number;
-  hospitalId?: mongoose.Types.ObjectId;
-  schedule: ISchedule[];
+  hospitalId?: mongoose.Types.ObjectId;       // primary hospital (legacy)
+  hospitalIds: mongoose.Types.ObjectId[];      // all assigned hospitals
+  hospitalSchedules: IHospitalSchedule[];      // per-hospital schedules
+  schedule: ISchedule[];                       // default/global schedule
   fees: number;
   bio: string;
   profileImage?: string;
@@ -21,19 +29,22 @@ export interface IDoctor extends Document {
   ratingCount: number;
 }
 
+const scheduleSchema = new Schema({ day: String, startTime: String, endTime: String }, { _id: false });
+
 const doctorSchema = new Schema<IDoctor>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     specializations: [{ type: String }],
     experience: { type: Number, default: 0 },
     hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital' },
-    schedule: [
+    hospitalIds: [{ type: Schema.Types.ObjectId, ref: 'Hospital' }],
+    hospitalSchedules: [
       {
-        day: { type: String, required: true },
-        startTime: { type: String, required: true },
-        endTime: { type: String, required: true },
+        hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital', required: true },
+        schedule: [scheduleSchema],
       },
     ],
+    schedule: [scheduleSchema],
     fees: { type: Number, required: true },
     bio: { type: String },
     profileImage: { type: String },

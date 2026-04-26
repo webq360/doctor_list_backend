@@ -4,7 +4,10 @@ import { protect, authorize } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.get('/', protect, authorize('admin'), getNotifications);
+// Any logged-in user can view notifications
+router.get('/', protect, getNotifications);
+
+// Only admin can send/edit/delete
 router.post('/', protect, authorize('admin'), sendNotification);
 router.put('/:id', protect, authorize('admin'), updateNotification);
 router.delete('/:id', protect, authorize('admin'), deleteNotification);

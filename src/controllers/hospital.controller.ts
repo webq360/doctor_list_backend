@@ -81,21 +81,76 @@ export const deleteHospital = async (req: Request, res: Response) => {
 
 // --- Doctors ---
 export const getHospitalDoctors = async (req: Request, res: Response) => {
-  const doctors = await Doctor.find({ hospitalId: req.params.id }).populate('userId', 'name email phone');
+  // Find doctors assigned to this hospital (either via hospitalId or hospitalIds array)
+  const doctors = await Doctor.find({
+    $or: [{ hospitalId: req.params.id }, { hospitalIds: req.params.id }]
+  }).populate('userId', 'name email phone');
   res.json(doctors);
 };
 
 export const addDoctorToHospital = async (req: Request, res: Response) => {
   const { doctorId } = req.body;
   if (!doctorId) return res.status(400).json({ message: 'doctorId required' });
-  const doctor = await Doctor.findByIdAndUpdate(doctorId, { hospitalId: req.params.id }, { new: true }).populate('userId', 'name email phone');
+  // Add to hospitalIds array (multi-hospital support) and keep hospitalId for backward compat
+  const doctor = await Doctor.findByIdAndUpdate(
+    doctorId,
+    {
+      $addToSet: { hospitalIds: req.params.id },
+      $set: { hospitalId: req.params.id },
+    },
+    { new: true }
+  ).populate('userId', 'name email phone');
   if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
   res.json(doctor);
 };
 
 export const removeDoctorFromHospital = async (req: Request, res: Response) => {
-  await Doctor.findByIdAndUpdate(req.params.doctorId, { $unset: { hospitalId: 1 } });
+  await Doctor.findByIdAndUpdate(req.params.doctorId, {
+    $pull: { hospitalIds: req.params.id },
+    $unset: { hospitalId: 1 },
+  });
   res.json({ message: 'Doctor removed' });
+};
+
+// Set hospital-specific schedule for a doctor
+export const setDoctorHospitalSchedule = async (req: Request, res: Response) => {
+  const { doctorId } = req.params;
+  const { schedule } = req.body; // array of { day, startTime, endTime }
+  if (!Array.isArray(schedule)) return res.status(400).json({ message: 'schedule array required' });
+
+  const doctor = await Doctor.findById(doctorId);
+  if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+
+  // Update or insert hospital-specific schedule
+  const existingIdx = doctor.hospitalSchedules?.findIndex(
+    (hs: any) => hs.hospitalId.toString() === req.params.id
+  ) ?? -1;
+
+  if (existingIdx >= 0) {
+    doctor.hospitalSchedules[existingIdx].schedule = schedule;
+  } else {
+    if (!doctor.hospitalSchedules) doctor.hospitalSchedules = [];
+    doctor.hospitalSchedules.push({ hospitalId: req.params.id as any, schedule });
+  }
+
+  await doctor.save();
+  res.json({ message: 'Schedule updated', schedule });
+};
+
+// Get hospital-specific schedule for a doctor
+export const getDoctorHospitalSchedule = async (req: Request, res: Response) => {
+  const { doctorId } = req.params;
+  const doctor = await Doctor.findById(doctorId);
+  if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+
+  const hospitalSchedule = doctor.hospitalSchedules?.find(
+    (hs: any) => hs.hospitalId.toString() === req.params.id
+  );
+  const schedule = (hospitalSchedule?.schedule?.length ?? 0) > 0
+    ? hospitalSchedule!.schedule
+    : doctor.schedule;
+
+  res.json({ schedule, fees: doctor.fees });
 };
 
 // --- Ambulances ---
@@ -125,19 +180,33 @@ export const getHospitalServices = async (req: Request, res: Response) => {
 };
 
 export const addHospitalService = async (req: Request, res: Response) => {
-  const { name, shortTitle, about, whatWeOffer, availableDoctors, iconUrl } = req.body;
+  const { name, shortTitle, about, whatWeOffer, availableDoctors, iconUrl, imageUrl, serviceImageUrl, ourService } = req.body;
   if (!name) return res.status(400).json({ message: 'name required' });
   const service = await HospitalService.create({
     hospitalId: req.params.id,
     name,
     shortTitle,
     about,
+    ourService,
     whatWeOffer: Array.isArray(whatWeOffer) ? whatWeOffer.filter(Boolean) : [],
     availableDoctors: Array.isArray(availableDoctors) ? availableDoctors : [],
     iconUrl,
+    imageUrl,
+    serviceImageUrl,
   });
   const populated = await service.populate({ path: 'availableDoctors', populate: { path: 'userId', select: 'name' } });
   res.status(201).json(populated);
+};
+
+export const updateHospitalService = async (req: Request, res: Response) => {
+  const { name, shortTitle, about, whatWeOffer, availableDoctors, iconUrl, imageUrl, serviceImageUrl, ourService } = req.body;
+  const service = await HospitalService.findByIdAndUpdate(
+    req.params.serviceId,
+    { name, shortTitle, about, ourService, whatWeOffer, availableDoctors, iconUrl, imageUrl, serviceImageUrl },
+    { new: true }
+  ).populate({ path: 'availableDoctors', populate: { path: 'userId', select: 'name' } });
+  if (!service) return res.status(404).json({ message: 'Service not found' });
+  res.json(service);
 };
 
 export const removeHospitalService = async (req: Request, res: Response) => {

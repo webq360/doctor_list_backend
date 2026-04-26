@@ -9,6 +9,7 @@ export interface IUser extends Document {
   imageUrl?: string;
   role: 'patient' | 'doctor' | 'admin' | 'ambulance_user';
   isActive: boolean;
+  fcmToken?: string;
   comparePassword(password: string): Promise<boolean>;
 }
 
@@ -21,6 +22,7 @@ const userSchema = new Schema<IUser>(
     imageUrl: { type: String },
     role: { type: String, enum: ['patient', 'doctor', 'admin', 'ambulance_user'], default: 'patient' },
     isActive: { type: Boolean, default: true },
+    fcmToken: { type: String },
   },
   { timestamps: true }
 );

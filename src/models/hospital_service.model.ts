@@ -8,6 +8,9 @@ export interface IHospitalService extends Document {
   whatWeOffer: string[];
   availableDoctors: mongoose.Types.ObjectId[];
   iconUrl?: string;
+  imageUrl?: string;
+  ourService?: string;
+  serviceImageUrl?: string;
 }
 
 const hospitalServiceSchema = new Schema<IHospitalService>(
@@ -19,6 +22,9 @@ const hospitalServiceSchema = new Schema<IHospitalService>(
     whatWeOffer: [{ type: String }],
     availableDoctors: [{ type: Schema.Types.ObjectId, ref: 'Doctor' }],
     iconUrl: { type: String },
+    imageUrl: { type: String },
+    serviceImageUrl: { type: String },
+    ourService: { type: String },
   },
   { timestamps: true }
 );

@@ -15,6 +15,11 @@ import uploadRoutes from './routes/upload.routes';
 import bloodBankRoutes from './routes/blood_bank.routes';
 import physiotherapyCenterRoutes from './routes/physiotherapy_center.routes';
 import notificationRoutes from './routes/notification.routes';
+import eyeCareCenterRoutes from './routes/eye_care_center.routes';
+import hearingAidCenterRoutes from './routes/hearing_aid_center.routes';
+import dentalClinicRoutes from './routes/dental_clinic.routes';
+import drugRehabilitationCenterRoutes from './routes/drug_rehabilitation_center.routes';
+import diseaseCategoryRoutes from './routes/disease_category.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
@@ -35,6 +40,13 @@ app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/blood-banks', bloodBankRoutes);
 app.use('/api/v1/physiotherapy-centers', physiotherapyCenterRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/eye-care-centers', eyeCareCenterRoutes);
+app.use('/api/v1/hearing-aid-centers', hearingAidCenterRoutes);
+app.use('/api/v1/dental-clinics', dentalClinicRoutes);
+app.use('/api/v1/drug-rehabilitation-centers', drugRehabilitationCenterRoutes);
+app.use('/api/v1/disease-categories', diseaseCategoryRoutes);
+// Alias: admin dashboard uses /diseases, Flutter uses /disease-categories — both point to same handler
+app.use('/api/v1/diseases', diseaseCategoryRoutes);
 
 app.use(errorHandler);
 

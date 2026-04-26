@@ -17,22 +17,27 @@ async function seed() {
     isActive: Boolean,
   }));
 
-  const existing = await User.findOne({ email: 'admin@gmail.com' });
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@gmail.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'adminadmin';
+  const adminPhone = process.env.ADMIN_PHONE || '01700000000';
+  const adminName = process.env.ADMIN_NAME || 'Admin';
+
+  const existing = await User.findOne({ email: adminEmail });
+  const hashed = await bcrypt.hash(adminPassword, 12);
+
   if (existing) {
-    const hashed = await bcrypt.hash('adminadmin', 12);
-    await User.updateOne({ email: 'admin@gmail.com' }, { $set: { password: hashed, role: 'admin' } });
-    console.log('✅ Admin user updated: admin@gmail.com / adminadmin');
+    await User.updateOne({ email: adminEmail }, { $set: { password: hashed, role: 'admin' } });
+    console.log(`✅ Admin user updated: ${adminEmail} / ${adminPassword}`);
   } else {
-    const hashed = await bcrypt.hash('adminadmin', 12);
     await User.create({
-      name: 'Admin',
-      email: 'admin@gmail.com',
-      phone: '01700000000',
+      name: adminName,
+      email: adminEmail,
+      phone: adminPhone,
       password: hashed,
       role: 'admin',
       isActive: true,
     });
-    console.log('✅ Admin user created: admin@gmail.com / adminadmin');
+    console.log(`✅ Admin user created: ${adminEmail} / ${adminPassword}`);
   }
 
   await mongoose.disconnect();
