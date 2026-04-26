@@ -24,7 +24,17 @@ import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowedOrigins = ['https://doctorlist-admin.vercel.app', 'https://doctor-list-backend-x5qp.vercel.app', 'http://localhost:3000', 'http://localhost:5000'];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 

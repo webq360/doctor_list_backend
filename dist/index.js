@@ -27,7 +27,18 @@ const drug_rehabilitation_center_routes_1 = __importDefault(require("./routes/dr
 const disease_category_routes_1 = __importDefault(require("./routes/disease_category.routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: (origin, callback) => {
+        const allowedOrigins = ['https://doctorlist-admin.vercel.app', 'https://doctor-list-backend-x5qp.vercel.app', 'http://localhost:3000', 'http://localhost:5000'];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 app.use(express_1.default.json());
 app.use((0, express_rate_limit_1.default)({ windowMs: 15 * 60 * 1000, max: 100 }));
 app.get('/', (_req, res) => {
