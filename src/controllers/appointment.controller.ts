@@ -24,14 +24,14 @@ export const getMyAppointments = async (req: AuthRequest, res: Response) => {
   const appointments = await Appointment.find(filter)
     .populate('patientId', 'name phone')
     .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
-    .populate('hospitalId', 'name address');
+    .populate('hospitalId', 'name address contactPersons');
   res.json(appointments);
 };
 
 export const getDoctorAppointments = async (req: AuthRequest, res: Response) => {
   const appointments = await Appointment.find({ doctorId: req.params.doctorId })
     .populate('patientId', 'name phone')
-    .populate('hospitalId', 'name');
+    .populate('hospitalId', 'name address contactPersons');
   res.json(appointments);
 };
 
@@ -44,7 +44,7 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response) =
   )
     .populate('patientId', 'name phone')
     .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
-    .populate('hospitalId', 'name');
+    .populate('hospitalId', 'name address contactPersons');
   
   if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
 
@@ -124,7 +124,7 @@ export const getAllAppointments = async (req: Request, res: Response) => {
   const appointments = await Appointment.find()
     .populate('patientId', 'name phone')
     .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
-    .populate('hospitalId', 'name')
+    .populate('hospitalId', 'name address contactPersons')
     .sort({ date: -1, time: -1 });
   res.json(appointments);
 };
