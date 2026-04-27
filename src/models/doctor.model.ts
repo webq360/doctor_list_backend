@@ -22,6 +22,7 @@ interface IHospitalSchedule {
 
 export interface IDoctor extends Document {
   userId: mongoose.Types.ObjectId;
+  bmdcNumber: string;                          // BMDC registration number (unique)
   specializations: string[];
   experience: number;
   hospitalId?: mongoose.Types.ObjectId;       // primary hospital (legacy)
@@ -54,6 +55,7 @@ const scheduleSchema = new Schema({
 const doctorSchema = new Schema<IDoctor>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    bmdcNumber: { type: String, unique: true, sparse: true },
     specializations: [{ type: String }],
     experience: { type: Number, default: 0 },
     hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital' },

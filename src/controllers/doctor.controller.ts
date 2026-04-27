@@ -68,27 +68,79 @@ export const approveDoctor = async (req: Request, res: Response) => {
 
 export const adminCreateDoctor = async (req: Request, res: Response) => {
   try {
-    const { name, email, phone, password, specializations, experience, fees, bio, hospitalId, profileImage, location, schedule } = req.body;
-    if (!name || !email || !phone || !password || !fees) {
-      return res.status(400).json({ message: 'name, email, phone, password, fees are required' });
+    const { name, phone, bmdcNumber, specializations, experience, fees, bio, hospitalIds, profileImage } = req.body;
+    if (!name || !phone || !fees) {
+      return res.status(400).json({ message: 'name, phone, and fees are required' });
     }
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(409).json({ message: 'Email already registered' });
+    
+    // Check if BMDC number already exists (only if provided)
+    if (bmdcNumber) {
+      const existingBmdc = await Doctor.findOne({ bmdcNumber });
+      if (existingBmdc) {
+        return res.status(409).json({ message: 'BMDC number already exists' });
+      }
+    }
+    
+    // Check if user with this phone already exists
+    const existingUser = await User.findOne({ phone });
+    let user;
+    
+    if (existingUser) {
+      // If user exists, check if they already have a doctor profile
+      const existingDoctor = await Doctor.findOne({ userId: existingUser._id });
+      if (existingDoctor) {
+        return res.status(409).json({ message: 'Doctor profile already exists for this phone number' });
+      }
+      user = existingUser;
+    } else {
+      // Create new user with phone as email and a default password
+      const email = `${phone}@doctor.temp`;
+      const defaultPassword = phone; // Use phone as default password
+      user = await User.create({ name, email, phone, password: defaultPassword, role: 'doctor' });
+    }
 
-    const user = await User.create({ name, email, phone, password, role: 'doctor' });
+    // Get location from primary hospital if hospitals are selected
+    let location;
+    if (hospitalIds && hospitalIds.length > 0) {
+      const Hospital = require('../models/hospital.model').default;
+      const primaryHospital = await Hospital.findById(hospitalIds[0]);
+      if (primaryHospital && (primaryHospital.division || primaryHospital.district || primaryHospital.upazila)) {
+        location = {
+          division: primaryHospital.division,
+          district: primaryHospital.district,
+          upazila: primaryHospital.upazila,
+        };
+      }
+    }
+
     const doctor = await Doctor.create({
       userId: user._id,
+      bmdcNumber: bmdcNumber || undefined,
       specializations: Array.isArray(specializations) ? specializations : (specializations ? [specializations] : []),
       experience: Number(experience) || 0,
       fees: Number(fees),
       bio,
-      hospitalId: hospitalId || undefined,
+      hospitalIds: hospitalIds || [],
+      hospitalId: hospitalIds?.[0] || undefined, // Set first hospital as primary
       profileImage,
       location,
-      schedule: schedule || [],
+      schedule: [], // No schedule on creation
       isApproved: true,
     });
-    const populated = await Doctor.findById(doctor._id).populate('userId', 'name email phone').populate('hospitalId', 'name');
+
+    // Add doctor to hospitals
+    if (hospitalIds && hospitalIds.length > 0) {
+      const Hospital = require('../models/hospital.model').default;
+      await Hospital.updateMany(
+        { _id: { $in: hospitalIds } },
+        { $addToSet: { doctors: doctor._id } }
+      );
+    }
+
+    const populated = await Doctor.findById(doctor._id)
+      .populate('userId', 'name email phone')
+      .populate('hospitalIds', 'name')
+      .populate('hospitalId', 'name');
     res.status(201).json(populated);
   } catch (err: any) {
     res.status(500).json({ message: err.message });
