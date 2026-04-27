@@ -34,7 +34,18 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const scheduleSchema = new mongoose_1.Schema({ day: String, startTime: String, endTime: String }, { _id: false });
+const shiftSchema = new mongoose_1.Schema({
+    shift: { type: String, enum: ['Morning', 'Evening', 'Night'], required: true },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true }
+}, { _id: false });
+const scheduleSchema = new mongoose_1.Schema({
+    day: { type: String, required: true },
+    shifts: [shiftSchema], // New shift-based format
+    // Legacy fields for backward compatibility
+    startTime: { type: String },
+    endTime: { type: String }
+}, { _id: false });
 const doctorSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     specializations: [{ type: String }],

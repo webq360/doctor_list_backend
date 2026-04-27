@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeHospitalService = exports.updateHospitalService = exports.addHospitalService = exports.getHospitalServices = exports.removeAmbulanceFromHospital = exports.addAmbulanceToHospital = exports.getHospitalAmbulances = exports.getDoctorHospitalSchedule = exports.setDoctorHospitalSchedule = exports.removeDoctorFromHospital = exports.addDoctorToHospital = exports.getHospitalDoctors = exports.deleteHospital = exports.updateHospital = exports.getNearestHospitals = exports.getHospitalById = exports.getAllHospitals = exports.createHospital = void 0;
+exports.removeHospitalService = exports.updateHospitalService = exports.addHospitalService = exports.getHospitalServices = exports.removeAmbulanceFromHospital = exports.addAmbulanceToHospital = exports.getHospitalAmbulances = exports.getDoctorHospitalSchedule = exports.setDoctorHospitalSchedule = exports.removeDoctorFromHospital = exports.addDoctorToHospital = exports.getHospitalDoctors = exports.deleteHospital = exports.toggleShowInHome = exports.toggleHospitalStatus = exports.updateHospital = exports.getNearestHospitals = exports.getHospitalById = exports.getAllHospitals = exports.createHospital = void 0;
 const zod_1 = require("zod");
 const hospital_model_1 = __importDefault(require("../models/hospital.model"));
 const doctor_model_1 = __importDefault(require("../models/doctor.model"));
@@ -17,7 +17,18 @@ const hospitalSchema = zod_1.z.object({
     district: zod_1.z.string().optional(),
     upazila: zod_1.z.string().optional(),
     location: zod_1.z.object({ lat: zod_1.z.number(), lng: zod_1.z.number() }).optional(),
-    contact: zod_1.z.string().min(5),
+    contactPersons: zod_1.z.array(zod_1.z.object({
+        name: zod_1.z.string().min(1),
+        designation: zod_1.z.string().min(1),
+        mobile: zod_1.z.string().min(1),
+        whatsapp: zod_1.z.string().optional(),
+    })).optional(),
+    // Legacy fields for backward compatibility
+    contactPersonName: zod_1.z.string().optional(),
+    contactPersonDesignation: zod_1.z.string().optional(),
+    contactMobile: zod_1.z.string().optional(),
+    contactWhatsapp: zod_1.z.string().optional(),
+    contact: zod_1.z.string().optional(),
     logo: zod_1.z.string().optional(),
     coverImage: zod_1.z.string().optional(),
 });
@@ -35,8 +46,13 @@ const createHospital = async (req, res) => {
 };
 exports.createHospital = createHospital;
 const getAllHospitals = async (req, res) => {
-    const { name, division, district, upazila } = req.query;
+    const { name, division, district, upazila, includeInactive } = req.query;
     const filter = {};
+    // By default, only show active hospitals (for mobile app)
+    // Admin can pass includeInactive=true to see all
+    if (includeInactive !== 'true') {
+        filter['status'] = 'active';
+    }
     if (division)
         filter['division'] = new RegExp(division, 'i');
     if (district)
@@ -82,6 +98,34 @@ const updateHospital = async (req, res) => {
     res.json(hospital);
 };
 exports.updateHospital = updateHospital;
+const toggleHospitalStatus = async (req, res) => {
+    try {
+        const hospital = await hospital_model_1.default.findById(req.params.id);
+        if (!hospital)
+            return res.status(404).json({ message: 'Hospital not found' });
+        hospital.status = hospital.status === 'active' ? 'paused' : 'active';
+        await hospital.save();
+        res.json(hospital);
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.toggleHospitalStatus = toggleHospitalStatus;
+const toggleShowInHome = async (req, res) => {
+    try {
+        const hospital = await hospital_model_1.default.findById(req.params.id);
+        if (!hospital)
+            return res.status(404).json({ message: 'Hospital not found' });
+        hospital.showInHome = !hospital.showInHome;
+        await hospital.save();
+        res.json(hospital);
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.toggleShowInHome = toggleShowInHome;
 const deleteHospital = async (req, res) => {
     await hospital_model_1.default.findByIdAndDelete(req.params.id);
     res.json({ message: 'Hospital deleted' });

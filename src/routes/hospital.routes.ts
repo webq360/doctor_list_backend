@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createHospital, getAllHospitals, getHospitalById, getNearestHospitals, updateHospital, deleteHospital,
+  toggleHospitalStatus, toggleShowInHome,
   getHospitalDoctors, addDoctorToHospital, removeDoctorFromHospital,
   setDoctorHospitalSchedule, getDoctorHospitalSchedule,
   getHospitalAmbulances, addAmbulanceToHospital, removeAmbulanceFromHospital,
@@ -12,8 +13,14 @@ const router = Router();
 
 router.get('/', getAllHospitals);
 router.get('/nearest', getNearestHospitals);
-router.get('/:id', getHospitalById);
 router.post('/', protect, authorize('admin'), createHospital);
+
+// Specific routes before :id routes
+router.patch('/:id/toggle-status', protect, authorize('admin'), toggleHospitalStatus);
+router.patch('/:id/toggle-show-in-home', protect, authorize('admin'), toggleShowInHome);
+
+// General :id routes
+router.get('/:id', getHospitalById);
 router.put('/:id', protect, authorize('admin'), updateHospital);
 router.delete('/:id', protect, authorize('admin'), deleteHospital);
 

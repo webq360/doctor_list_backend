@@ -13,7 +13,18 @@ const hospitalSchema = z.object({
   district: z.string().optional(),
   upazila: z.string().optional(),
   location: z.object({ lat: z.number(), lng: z.number() }).optional(),
-  contact: z.string().min(5),
+  contactPersons: z.array(z.object({
+    name: z.string().min(1),
+    designation: z.string().min(1),
+    mobile: z.string().min(1),
+    whatsapp: z.string().optional(),
+  })).optional(),
+  // Legacy fields for backward compatibility
+  contactPersonName: z.string().optional(),
+  contactPersonDesignation: z.string().optional(),
+  contactMobile: z.string().optional(),
+  contactWhatsapp: z.string().optional(),
+  contact: z.string().optional(),
   logo: z.string().optional(),
   coverImage: z.string().optional(),
 });
@@ -30,8 +41,14 @@ export const createHospital = async (req: Request, res: Response) => {
 };
 
 export const getAllHospitals = async (req: Request, res: Response) => {
-  const { name, division, district, upazila } = req.query;
+  const { name, division, district, upazila, includeInactive } = req.query;
   const filter: Record<string, unknown> = {};
+
+  // By default, only show active hospitals (for mobile app)
+  // Admin can pass includeInactive=true to see all
+  if (includeInactive !== 'true') {
+    filter['status'] = 'active';
+  }
 
   if (division) filter['division'] = new RegExp(division as string, 'i');
   if (district) filter['district'] = new RegExp(district as string, 'i');
@@ -72,6 +89,32 @@ export const updateHospital = async (req: Request, res: Response) => {
   const hospital = await Hospital.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!hospital) return res.status(404).json({ message: 'Hospital not found' });
   res.json(hospital);
+};
+
+export const toggleHospitalStatus = async (req: Request, res: Response) => {
+  try {
+    const hospital = await Hospital.findById(req.params.id);
+    if (!hospital) return res.status(404).json({ message: 'Hospital not found' });
+    
+    hospital.status = hospital.status === 'active' ? 'paused' : 'active';
+    await hospital.save();
+    res.json(hospital);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const toggleShowInHome = async (req: Request, res: Response) => {
+  try {
+    const hospital = await Hospital.findById(req.params.id);
+    if (!hospital) return res.status(404).json({ message: 'Hospital not found' });
+    
+    hospital.showInHome = !hospital.showInHome;
+    await hospital.save();
+    res.json(hospital);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const deleteHospital = async (req: Request, res: Response) => {

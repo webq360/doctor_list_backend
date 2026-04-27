@@ -1,9 +1,17 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-interface ISchedule {
-  day: string;
+interface IShift {
+  shift: 'Morning' | 'Evening' | 'Night';
   startTime: string;
   endTime: string;
+}
+
+interface ISchedule {
+  day: string;
+  shifts?: IShift[];  // New shift-based format
+  // Legacy fields for backward compatibility
+  startTime?: string;
+  endTime?: string;
 }
 
 // Hospital-specific schedule: doctor can have different times at different hospitals
@@ -29,7 +37,19 @@ export interface IDoctor extends Document {
   ratingCount: number;
 }
 
-const scheduleSchema = new Schema({ day: String, startTime: String, endTime: String }, { _id: false });
+const shiftSchema = new Schema({ 
+  shift: { type: String, enum: ['Morning', 'Evening', 'Night'], required: true },
+  startTime: { type: String, required: true }, 
+  endTime: { type: String, required: true } 
+}, { _id: false });
+
+const scheduleSchema = new Schema({ 
+  day: { type: String, required: true }, 
+  shifts: [shiftSchema],  // New shift-based format
+  // Legacy fields for backward compatibility
+  startTime: { type: String }, 
+  endTime: { type: String } 
+}, { _id: false });
 
 const doctorSchema = new Schema<IDoctor>(
   {

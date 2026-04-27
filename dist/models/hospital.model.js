@@ -44,7 +44,20 @@ const hospitalSchema = new mongoose_1.Schema({
         lat: { type: Number },
         lng: { type: Number },
     },
-    contact: { type: String, required: true },
+    contactPersons: [{
+            name: { type: String, required: true },
+            designation: { type: String, required: true },
+            mobile: { type: String, required: true },
+            whatsapp: { type: String },
+        }],
+    status: { type: String, enum: ['active', 'paused'], default: 'active' },
+    showInHome: { type: Boolean, default: false }, // New field
+    // Legacy fields for backward compatibility
+    contactPersonName: { type: String },
+    contactPersonDesignation: { type: String },
+    contactMobile: { type: String },
+    contactWhatsapp: { type: String },
+    contact: { type: String },
     logo: { type: String },
     coverImage: { type: String },
     doctors: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Doctor' }],
