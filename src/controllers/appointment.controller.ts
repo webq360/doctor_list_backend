@@ -36,17 +36,96 @@ export const getDoctorAppointments = async (req: AuthRequest, res: Response) => 
 };
 
 export const updateAppointmentStatus = async (req: AuthRequest, res: Response) => {
-  const { status } = req.body;
-  const appointment = await Appointment.findByIdAndUpdate(req.params.id, { status }, { new: true });
+  const { status, statusChangeMessage } = req.body;
+  const appointment = await Appointment.findByIdAndUpdate(
+    req.params.id, 
+    { status, statusChangeMessage }, 
+    { new: true }
+  )
+    .populate('patientId', 'name phone')
+    .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
+    .populate('hospitalId', 'name');
+  
   if (!appointment) return res.status(404).json({ message: 'Appointment not found' });
+
+  // Send notification to patient for any status change
+  try {
+    const Notification = require('../models/notification.model').default;
+    
+    // Build notification title and body based on status
+    let title = '';
+    let body = '';
+    
+    switch (status) {
+      case 'confirmed':
+        title = 'Appointment Confirmed';
+        body = `Your appointment has been confirmed. Serial Number: ${appointment.serialNumber}`;
+        if (statusChangeMessage) {
+          body += `\n\n${statusChangeMessage}`;
+        }
+        break;
+      case 'completed':
+        title = 'Appointment Completed';
+        body = `Your appointment has been completed.`;
+        if (statusChangeMessage) {
+          body += `\n\n${statusChangeMessage}`;
+        }
+        break;
+      case 'cancelled':
+        title = 'Appointment Cancelled';
+        body = `Your appointment has been cancelled.`;
+        if (statusChangeMessage) {
+          body += `\n\n${statusChangeMessage}`;
+        }
+        break;
+      case 'pending':
+        title = 'Appointment Status Updated';
+        body = `Your appointment status has been updated to pending.`;
+        if (statusChangeMessage) {
+          body += `\n\n${statusChangeMessage}`;
+        }
+        break;
+      default:
+        title = 'Appointment Status Updated';
+        body = `Your appointment status has been updated to ${status}.`;
+        if (statusChangeMessage) {
+          body += `\n\n${statusChangeMessage}`;
+        }
+    }
+    
+    await Notification.create({
+      title,
+      body,
+      targetRole: 'patient',
+      sentBy: (req as any).user.id,
+    });
+
+    // Send FCM push notification
+    const { sendPushToTokens } = require('../services/fcm.service');
+    const user = await require('../models/user.model').default.findById(appointment.patientId._id);
+    if (user?.fcmToken) {
+      await sendPushToTokens(
+        [user.fcmToken],
+        title,
+        body,
+        undefined,
+        { notificationId: appointment._id.toString() }
+      );
+    }
+  } catch (err) {
+    console.error('Failed to send notification:', err);
+    // Don't fail the response if notification fails
+  }
+
   res.json(appointment);
 };
 
 export const getAllAppointments = async (req: Request, res: Response) => {
   const appointments = await Appointment.find()
-    .populate('patientId', 'name')
+    .populate('patientId', 'name phone')
     .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
-    .populate('hospitalId', 'name');
+    .populate('hospitalId', 'name')
+    .sort({ date: -1, time: -1 });
   res.json(appointments);
 };
 

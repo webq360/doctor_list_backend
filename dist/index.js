@@ -25,6 +25,7 @@ const hearing_aid_center_routes_1 = __importDefault(require("./routes/hearing_ai
 const dental_clinic_routes_1 = __importDefault(require("./routes/dental_clinic.routes"));
 const drug_rehabilitation_center_routes_1 = __importDefault(require("./routes/drug_rehabilitation_center.routes"));
 const disease_category_routes_1 = __importDefault(require("./routes/disease_category.routes"));
+const department_routes_1 = __importDefault(require("./routes/department.routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
@@ -61,6 +62,7 @@ app.use('/api/v1/hearing-aid-centers', hearing_aid_center_routes_1.default);
 app.use('/api/v1/dental-clinics', dental_clinic_routes_1.default);
 app.use('/api/v1/drug-rehabilitation-centers', drug_rehabilitation_center_routes_1.default);
 app.use('/api/v1/disease-categories', disease_category_routes_1.default);
+app.use('/api/v1/departments', department_routes_1.default);
 // Alias: admin dashboard uses /diseases, Flutter uses /disease-categories — both point to same handler
 app.use('/api/v1/diseases', disease_category_routes_1.default);
 app.use(error_middleware_1.errorHandler);

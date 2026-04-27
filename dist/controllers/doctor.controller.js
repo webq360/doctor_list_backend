@@ -39,7 +39,9 @@ const getAllDoctors = async (req, res) => {
         filter['location.upazila'] = new RegExp(upazila, 'i');
     let doctors = await doctor_model_1.default.find(filter)
         .populate('userId', 'name email phone')
-        .populate('hospitalId', 'name address logo');
+        .populate('hospitalId', 'name address logo')
+        .populate('hospitalIds', 'name address division district upazila')
+        .populate('departments', 'title description');
     // Filter by name (from populated userId)
     if (name) {
         const n = name.toLowerCase();
@@ -51,7 +53,9 @@ exports.getAllDoctors = getAllDoctors;
 const getDoctorById = async (req, res) => {
     const doctor = await doctor_model_1.default.findById(req.params.id)
         .populate('userId', 'name email phone')
-        .populate('hospitalId', 'name address');
+        .populate('hospitalId', 'name address')
+        .populate('hospitalIds', 'name address division district upazila')
+        .populate('departments', 'title description');
     if (!doctor)
         return res.status(404).json({ message: 'Doctor not found' });
     res.json(doctor);
@@ -73,7 +77,7 @@ const approveDoctor = async (req, res) => {
 exports.approveDoctor = approveDoctor;
 const adminCreateDoctor = async (req, res) => {
     try {
-        const { name, phone, bmdcNumber, specializations, experience, fees, bio, hospitalIds, profileImage } = req.body;
+        const { name, phone, bmdcNumber, specializations, departments, experience, fees, bio, hospitalIds, profileImage } = req.body;
         if (!name || !fees) {
             return res.status(400).json({ message: 'name and fees are required' });
         }
@@ -126,6 +130,7 @@ const adminCreateDoctor = async (req, res) => {
             userId: user._id,
             bmdcNumber: bmdcNumber || undefined,
             specializations: Array.isArray(specializations) ? specializations : (specializations ? [specializations] : []),
+            departments: departments || [],
             experience: Number(experience) || 0,
             fees: Number(fees),
             bio,
@@ -144,7 +149,8 @@ const adminCreateDoctor = async (req, res) => {
         const populated = await doctor_model_1.default.findById(doctor._id)
             .populate('userId', 'name email phone')
             .populate('hospitalIds', 'name')
-            .populate('hospitalId', 'name');
+            .populate('hospitalId', 'name')
+            .populate('departments', 'title description');
         res.status(201).json(populated);
     }
     catch (err) {

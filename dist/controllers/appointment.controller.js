@@ -38,18 +38,45 @@ const getDoctorAppointments = async (req, res) => {
 };
 exports.getDoctorAppointments = getDoctorAppointments;
 const updateAppointmentStatus = async (req, res) => {
-    const { status } = req.body;
-    const appointment = await appointment_model_1.default.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const { status, statusChangeMessage } = req.body;
+    const appointment = await appointment_model_1.default.findByIdAndUpdate(req.params.id, { status, statusChangeMessage: status === 'confirmed' ? statusChangeMessage : undefined }, { new: true })
+        .populate('patientId', 'name phone')
+        .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
+        .populate('hospitalId', 'name');
     if (!appointment)
         return res.status(404).json({ message: 'Appointment not found' });
+    // Send notification to patient if status is confirmed
+    if (status === 'confirmed' && statusChangeMessage) {
+        try {
+            const Notification = require('../models/notification.model').default;
+            const notificationBody = `Your appointment has been confirmed. Serial Number: ${appointment.serialNumber}\n\n${statusChangeMessage}`;
+            await Notification.create({
+                title: 'Appointment Confirmed',
+                body: notificationBody,
+                targetRole: 'patient',
+                sentBy: req.user.id,
+            });
+            // Send FCM push notification
+            const { sendPushToTokens } = require('../services/fcm.service');
+            const user = await require('../models/user.model').default.findById(appointment.patientId._id);
+            if (user?.fcmToken) {
+                await sendPushToTokens([user.fcmToken], 'Appointment Confirmed', notificationBody, undefined, { notificationId: appointment._id.toString() });
+            }
+        }
+        catch (err) {
+            console.error('Failed to send notification:', err);
+            // Don't fail the response if notification fails
+        }
+    }
     res.json(appointment);
 };
 exports.updateAppointmentStatus = updateAppointmentStatus;
 const getAllAppointments = async (req, res) => {
     const appointments = await appointment_model_1.default.find()
-        .populate('patientId', 'name')
+        .populate('patientId', 'name phone')
         .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
-        .populate('hospitalId', 'name');
+        .populate('hospitalId', 'name')
+        .sort({ date: -1, time: -1 });
     res.json(appointments);
 };
 exports.getAllAppointments = getAllAppointments;

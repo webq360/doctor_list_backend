@@ -7,7 +7,11 @@ const router = (0, express_1.Router)();
 router.get('/', doctor_controller_1.getAllDoctors);
 router.get('/all', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), async (req, res) => {
     const Doctor = require('../models/doctor.model').default;
-    const doctors = await Doctor.find().populate('userId', 'name email phone').populate('hospitalId', 'name');
+    const doctors = await Doctor.find()
+        .populate('userId', 'name email phone')
+        .populate('hospitalId', 'name')
+        .populate('hospitalIds', 'name address division district upazila')
+        .populate('departments', 'title description');
     res.json(doctors);
 });
 router.get('/:id', doctor_controller_1.getDoctorById);
@@ -39,7 +43,10 @@ router.put('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('
             }
         }
         const updated = await Doctor.findByIdAndUpdate(req.params.id, doctorFields, { new: true })
-            .populate('userId', 'name email phone').populate('hospitalId', 'name');
+            .populate('userId', 'name email phone')
+            .populate('hospitalId', 'name')
+            .populate('hospitalIds', 'name address division district upazila')
+            .populate('departments', 'title description');
         res.json(updated);
     }
     catch (err) {

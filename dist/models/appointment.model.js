@@ -46,5 +46,22 @@ const appointmentSchema = new mongoose_1.Schema({
         default: 'pending',
     },
     notes: { type: String },
+    appointmentFor: { type: String, enum: ['self', 'other'], default: 'self' },
+    appointmentForName: { type: String },
+    appointmentForPhone: { type: String },
+    appointmentForAge: { type: Number },
+    serialNumber: { type: String, unique: true, sparse: true },
+    statusChangeMessage: { type: String },
 }, { timestamps: true });
+// Generate serial number before saving
+appointmentSchema.pre('save', async function (next) {
+    if (!this.serialNumber) {
+        // Generate serial number: APT-YYYYMMDD-XXXXX
+        const date = new Date();
+        const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+        const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+        this.serialNumber = `APT-${dateStr}-${random}`;
+    }
+    next();
+});
 exports.default = mongoose_1.default.model('Appointment', appointmentSchema);

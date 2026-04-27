@@ -50,6 +50,7 @@ const doctorSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     bmdcNumber: { type: String, unique: true, sparse: true },
     specializations: [{ type: String }],
+    departments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Department' }],
     experience: { type: Number, default: 0 },
     hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
     hospitalIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' }],
