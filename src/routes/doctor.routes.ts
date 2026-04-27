@@ -15,7 +15,11 @@ const router = Router();
 router.get('/', getAllDoctors);
 router.get('/all', protect, authorize('admin'), async (req, res) => {
   const Doctor = require('../models/doctor.model').default;
-  const doctors = await Doctor.find().populate('userId', 'name email phone').populate('hospitalId', 'name');
+  const doctors = await Doctor.find()
+    .populate('userId', 'name email phone')
+    .populate('hospitalId', 'name')
+    .populate('hospitalIds', 'name address division district upazila')
+    .populate('departments', 'title description');
   res.json(doctors);
 });
 router.get('/:id', getDoctorById);
@@ -40,7 +44,10 @@ router.put('/:id', protect, authorize('admin'), async (req: any, res: any) => {
       if (user) { Object.assign(user, userUpdate); await user.save(); }
     }
     const updated = await Doctor.findByIdAndUpdate(req.params.id, doctorFields, { new: true })
-      .populate('userId', 'name email phone').populate('hospitalId', 'name');
+      .populate('userId', 'name email phone')
+      .populate('hospitalId', 'name')
+      .populate('hospitalIds', 'name address division district upazila')
+      .populate('departments', 'title description');
     res.json(updated);
   } catch (err: any) { res.status(500).json({ message: err.message }); }
 });

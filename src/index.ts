@@ -20,6 +20,7 @@ import hearingAidCenterRoutes from './routes/hearing_aid_center.routes';
 import dentalClinicRoutes from './routes/dental_clinic.routes';
 import drugRehabilitationCenterRoutes from './routes/drug_rehabilitation_center.routes';
 import diseaseCategoryRoutes from './routes/disease_category.routes';
+import departmentRoutes from './routes/department.routes';
 import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/v1/hearing-aid-centers', hearingAidCenterRoutes);
 app.use('/api/v1/dental-clinics', dentalClinicRoutes);
 app.use('/api/v1/drug-rehabilitation-centers', drugRehabilitationCenterRoutes);
 app.use('/api/v1/disease-categories', diseaseCategoryRoutes);
+app.use('/api/v1/departments', departmentRoutes);
 // Alias: admin dashboard uses /diseases, Flutter uses /disease-categories — both point to same handler
 app.use('/api/v1/diseases', diseaseCategoryRoutes);
 

@@ -35,7 +35,9 @@ export const getAllDoctors = async (req: Request, res: Response) => {
 
   let doctors = await Doctor.find(filter)
     .populate('userId', 'name email phone')
-    .populate('hospitalId', 'name address logo');
+    .populate('hospitalId', 'name address logo')
+    .populate('hospitalIds', 'name address division district upazila')
+    .populate('departments', 'title description');
 
   // Filter by name (from populated userId)
   if (name) {
@@ -49,7 +51,9 @@ export const getAllDoctors = async (req: Request, res: Response) => {
 export const getDoctorById = async (req: Request, res: Response) => {
   const doctor = await Doctor.findById(req.params.id)
     .populate('userId', 'name email phone')
-    .populate('hospitalId', 'name address');
+    .populate('hospitalId', 'name address')
+    .populate('hospitalIds', 'name address division district upazila')
+    .populate('departments', 'title description');
   if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
   res.json(doctor);
 };
@@ -68,9 +72,9 @@ export const approveDoctor = async (req: Request, res: Response) => {
 
 export const adminCreateDoctor = async (req: Request, res: Response) => {
   try {
-    const { name, phone, bmdcNumber, specializations, experience, fees, bio, hospitalIds, profileImage } = req.body;
-    if (!name || !phone || !fees) {
-      return res.status(400).json({ message: 'name, phone, and fees are required' });
+    const { name, phone, bmdcNumber, specializations, departments, experience, fees, bio, hospitalIds, profileImage } = req.body;
+    if (!name || !fees) {
+      return res.status(400).json({ message: 'name and fees are required' });
     }
     
     // Check if BMDC number already exists (only if provided)
@@ -81,22 +85,28 @@ export const adminCreateDoctor = async (req: Request, res: Response) => {
       }
     }
     
-    // Check if user with this phone already exists
-    const existingUser = await User.findOne({ phone });
+    // Check if user with this phone already exists (only if phone provided)
     let user;
-    
-    if (existingUser) {
-      // If user exists, check if they already have a doctor profile
-      const existingDoctor = await Doctor.findOne({ userId: existingUser._id });
-      if (existingDoctor) {
-        return res.status(409).json({ message: 'Doctor profile already exists for this phone number' });
+    if (phone) {
+      const existingUser = await User.findOne({ phone });
+      if (existingUser) {
+        // If user exists, check if they already have a doctor profile
+        const existingDoctor = await Doctor.findOne({ userId: existingUser._id });
+        if (existingDoctor) {
+          return res.status(409).json({ message: 'Doctor profile already exists for this phone number' });
+        }
+        user = existingUser;
+      } else {
+        // Create new user with phone as email and a default password
+        const email = `${phone}@doctor.temp`;
+        const defaultPassword = phone; // Use phone as default password
+        user = await User.create({ name, email, phone, password: defaultPassword, role: 'doctor' });
       }
-      user = existingUser;
     } else {
-      // Create new user with phone as email and a default password
-      const email = `${phone}@doctor.temp`;
-      const defaultPassword = phone; // Use phone as default password
-      user = await User.create({ name, email, phone, password: defaultPassword, role: 'doctor' });
+      // Create user without phone - use name-based email
+      const email = `${name.toLowerCase().replace(/\s+/g, '.')}@doctor.temp`;
+      const defaultPassword = 'doctor123'; // Default password when no phone
+      user = await User.create({ name, email, password: defaultPassword, role: 'doctor' });
     }
 
     // Get location from primary hospital if hospitals are selected
@@ -117,6 +127,7 @@ export const adminCreateDoctor = async (req: Request, res: Response) => {
       userId: user._id,
       bmdcNumber: bmdcNumber || undefined,
       specializations: Array.isArray(specializations) ? specializations : (specializations ? [specializations] : []),
+      departments: departments || [],
       experience: Number(experience) || 0,
       fees: Number(fees),
       bio,
@@ -140,7 +151,8 @@ export const adminCreateDoctor = async (req: Request, res: Response) => {
     const populated = await Doctor.findById(doctor._id)
       .populate('userId', 'name email phone')
       .populate('hospitalIds', 'name')
-      .populate('hospitalId', 'name');
+      .populate('hospitalId', 'name')
+      .populate('departments', 'title description');
     res.status(201).json(populated);
   } catch (err: any) {
     res.status(500).json({ message: err.message });

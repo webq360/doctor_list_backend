@@ -24,6 +24,7 @@ export interface IDoctor extends Document {
   userId: mongoose.Types.ObjectId;
   bmdcNumber: string;                          // BMDC registration number (unique)
   specializations: string[];
+  departments: mongoose.Types.ObjectId[];      // assigned departments
   experience: number;
   hospitalId?: mongoose.Types.ObjectId;       // primary hospital (legacy)
   hospitalIds: mongoose.Types.ObjectId[];      // all assigned hospitals
@@ -57,6 +58,7 @@ const doctorSchema = new Schema<IDoctor>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     bmdcNumber: { type: String, unique: true, sparse: true },
     specializations: [{ type: String }],
+    departments: [{ type: Schema.Types.ObjectId, ref: 'Department' }],
     experience: { type: Number, default: 0 },
     hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital' },
     hospitalIds: [{ type: Schema.Types.ObjectId, ref: 'Hospital' }],

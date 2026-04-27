@@ -74,8 +74,8 @@ exports.approveDoctor = approveDoctor;
 const adminCreateDoctor = async (req, res) => {
     try {
         const { name, phone, bmdcNumber, specializations, experience, fees, bio, hospitalIds, profileImage } = req.body;
-        if (!name || !phone || !fees) {
-            return res.status(400).json({ message: 'name, phone, and fees are required' });
+        if (!name || !fees) {
+            return res.status(400).json({ message: 'name and fees are required' });
         }
         // Check if BMDC number already exists (only if provided)
         if (bmdcNumber) {
@@ -84,22 +84,30 @@ const adminCreateDoctor = async (req, res) => {
                 return res.status(409).json({ message: 'BMDC number already exists' });
             }
         }
-        // Check if user with this phone already exists
-        const existingUser = await user_model_1.default.findOne({ phone });
+        // Check if user with this phone already exists (only if phone provided)
         let user;
-        if (existingUser) {
-            // If user exists, check if they already have a doctor profile
-            const existingDoctor = await doctor_model_1.default.findOne({ userId: existingUser._id });
-            if (existingDoctor) {
-                return res.status(409).json({ message: 'Doctor profile already exists for this phone number' });
+        if (phone) {
+            const existingUser = await user_model_1.default.findOne({ phone });
+            if (existingUser) {
+                // If user exists, check if they already have a doctor profile
+                const existingDoctor = await doctor_model_1.default.findOne({ userId: existingUser._id });
+                if (existingDoctor) {
+                    return res.status(409).json({ message: 'Doctor profile already exists for this phone number' });
+                }
+                user = existingUser;
             }
-            user = existingUser;
+            else {
+                // Create new user with phone as email and a default password
+                const email = `${phone}@doctor.temp`;
+                const defaultPassword = phone; // Use phone as default password
+                user = await user_model_1.default.create({ name, email, phone, password: defaultPassword, role: 'doctor' });
+            }
         }
         else {
-            // Create new user with phone as email and a default password
-            const email = `${phone}@doctor.temp`;
-            const defaultPassword = phone; // Use phone as default password
-            user = await user_model_1.default.create({ name, email, phone, password: defaultPassword, role: 'doctor' });
+            // Create user without phone - use name-based email
+            const email = `${name.toLowerCase().replace(/\s+/g, '.')}@doctor.temp`;
+            const defaultPassword = 'doctor123'; // Default password when no phone
+            user = await user_model_1.default.create({ name, email, password: defaultPassword, role: 'doctor' });
         }
         // Get location from primary hospital if hospitals are selected
         let location;
