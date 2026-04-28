@@ -20,12 +20,27 @@ interface IHospitalSchedule {
   schedule: ISchedule[];
 }
 
+// Education entry
+interface IEducation {
+  degree: string;
+  institution: string;
+  year: string;
+}
+
+// Work experience entry
+interface IExperience {
+  position: string;
+  organization: string;
+  duration: string;
+}
+
 export interface IDoctor extends Document {
   userId: mongoose.Types.ObjectId;
   bmdcNumber: string;                          // BMDC registration number (unique)
   specializations: string[];
   departments: mongoose.Types.ObjectId[];      // assigned departments
-  experience: number;
+  experience: number;                          // years of experience (legacy field)
+  workExperience: IExperience[];               // detailed work experience entries
   hospitalId?: mongoose.Types.ObjectId;       // primary hospital (legacy)
   hospitalIds: mongoose.Types.ObjectId[];      // all assigned hospitals
   hospitalSchedules: IHospitalSchedule[];      // per-hospital schedules
@@ -37,6 +52,12 @@ export interface IDoctor extends Document {
   isApproved: boolean;
   rating: number;
   ratingCount: number;
+  // New fields for diseases and education
+  diseasesTitle?: string;
+  diseasesDescription?: string;
+  education: IEducation[];
+  educationTitle?: string;
+  educationDescription?: string;
 }
 
 const shiftSchema = new Schema({ 
@@ -53,6 +74,18 @@ const scheduleSchema = new Schema({
   endTime: { type: String } 
 }, { _id: false });
 
+const educationSchema = new Schema({
+  degree: { type: String, required: true },
+  institution: { type: String, required: true },
+  year: { type: String, required: true }
+}, { _id: false });
+
+const experienceSchema = new Schema({
+  position: { type: String, required: true },
+  organization: { type: String, required: true },
+  duration: { type: String, required: true }
+}, { _id: false });
+
 const doctorSchema = new Schema<IDoctor>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
@@ -60,6 +93,7 @@ const doctorSchema = new Schema<IDoctor>(
     specializations: [{ type: String }],
     departments: [{ type: Schema.Types.ObjectId, ref: 'Department' }],
     experience: { type: Number, default: 0 },
+    workExperience: [experienceSchema],
     hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital' },
     hospitalIds: [{ type: Schema.Types.ObjectId, ref: 'Hospital' }],
     hospitalSchedules: [
@@ -80,6 +114,12 @@ const doctorSchema = new Schema<IDoctor>(
     isApproved: { type: Boolean, default: false },
     rating: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
+    // New fields for diseases and education
+    diseasesTitle: { type: String },
+    diseasesDescription: { type: String },
+    education: [educationSchema],
+    educationTitle: { type: String },
+    educationDescription: { type: String },
   },
   { timestamps: true }
 );

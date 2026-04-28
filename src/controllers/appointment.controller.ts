@@ -6,16 +6,34 @@ import { AuthRequest } from '../middleware/auth.middleware';
 const appointmentSchema = z.object({
   doctorId: z.string(),
   hospitalId: z.string().optional(),
-  date: z.string(),
-  time: z.string(),
+  date: z.string().optional(),
+  time: z.string().optional(),
   notes: z.string().optional(),
+  
+  // Patient details
+  patientType: z.enum(['Myself', 'Others']).default('Myself'),
+  patientName: z.string().optional(),
+  patientMobile: z.string().optional(),
+  patientAge: z.number().optional(),
+  patientGender: z.enum(['Male', 'Female', 'Other']).optional(),
+  patientAddress: z.string().optional(),
 });
 
 export const bookAppointment = async (req: AuthRequest, res: Response) => {
   const parsed = appointmentSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ errors: parsed.error.flatten() });
 
-  const appointment = await Appointment.create({ ...parsed.data, patientId: req.user!.id });
+  // Set default date and time if not provided
+  const currentDate = new Date().toISOString().split('T')[0];
+  const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+  const appointment = await Appointment.create({ 
+    ...parsed.data, 
+    patientId: req.user!.id,
+    date: parsed.data.date || currentDate,
+    time: parsed.data.time || currentTime,
+  });
+  
   res.status(201).json(appointment);
 };
 

@@ -8,10 +8,15 @@ export interface IAppointment extends Document {
   time: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes: string;
-  appointmentFor?: 'self' | 'other';  // Is appointment for self or someone else
-  appointmentForName?: string;  // Name of person if appointment is for someone else
-  appointmentForPhone?: string;  // Phone of person if appointment is for someone else
-  appointmentForAge?: number;  // Age of person if appointment is for someone else
+  
+  // Patient details
+  patientType: 'Myself' | 'Others';  // Is appointment for self or someone else
+  patientName?: string;  // Name (only for Others)
+  patientMobile?: string;  // Mobile (only for Others)
+  patientAge?: number;  // Age
+  patientGender?: 'Male' | 'Female' | 'Other';  // Gender
+  patientAddress?: string;  // Address (only for Others)
+  
   serialNumber?: string;  // Unique serial number for the appointment
   statusChangeMessage?: string;  // Message sent when status is changed
 }
@@ -29,10 +34,15 @@ const appointmentSchema = new Schema<IAppointment>(
       default: 'pending',
     },
     notes: { type: String },
-    appointmentFor: { type: String, enum: ['self', 'other'], default: 'self' },
-    appointmentForName: { type: String },
-    appointmentForPhone: { type: String },
-    appointmentForAge: { type: Number },
+    
+    // Patient details
+    patientType: { type: String, enum: ['Myself', 'Others'], default: 'Myself' },
+    patientName: { type: String },
+    patientMobile: { type: String },
+    patientAge: { type: Number },
+    patientGender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    patientAddress: { type: String },
+    
     serialNumber: { type: String, unique: true, sparse: true },
     statusChangeMessage: { type: String },
   },

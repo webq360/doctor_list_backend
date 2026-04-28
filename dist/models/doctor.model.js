@@ -46,12 +46,23 @@ const scheduleSchema = new mongoose_1.Schema({
     startTime: { type: String },
     endTime: { type: String }
 }, { _id: false });
+const educationSchema = new mongoose_1.Schema({
+    degree: { type: String, required: true },
+    institution: { type: String, required: true },
+    year: { type: String, required: true }
+}, { _id: false });
+const experienceSchema = new mongoose_1.Schema({
+    position: { type: String, required: true },
+    organization: { type: String, required: true },
+    duration: { type: String, required: true }
+}, { _id: false });
 const doctorSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     bmdcNumber: { type: String, unique: true, sparse: true },
     specializations: [{ type: String }],
     departments: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Department' }],
     experience: { type: Number, default: 0 },
+    workExperience: [experienceSchema],
     hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
     hospitalIds: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' }],
     hospitalSchedules: [
@@ -72,5 +83,11 @@ const doctorSchema = new mongoose_1.Schema({
     isApproved: { type: Boolean, default: false },
     rating: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
+    // New fields for diseases and education
+    diseasesTitle: { type: String },
+    diseasesDescription: { type: String },
+    education: [educationSchema],
+    educationTitle: { type: String },
+    educationDescription: { type: String },
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Doctor', doctorSchema);
