@@ -54,10 +54,18 @@ export const getDoctorAppointments = async (req: AuthRequest, res: Response) => 
 };
 
 export const updateAppointmentStatus = async (req: AuthRequest, res: Response) => {
-  const { status, statusChangeMessage } = req.body;
+  const { status, statusChangeMessage, serialNumber } = req.body;
+  
+  const updateData: any = { status, statusChangeMessage };
+  
+  // If manual serial number is provided for confirmed status, use it
+  if (status === 'confirmed' && serialNumber && serialNumber.trim()) {
+    updateData.serialNumber = serialNumber.trim();
+  }
+  
   const appointment = await Appointment.findByIdAndUpdate(
     req.params.id, 
-    { status, statusChangeMessage }, 
+    updateData, 
     { new: true }
   )
     .populate('patientId', 'name phone')
