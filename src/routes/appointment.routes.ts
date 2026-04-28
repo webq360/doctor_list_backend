@@ -19,6 +19,6 @@ router.post('/', authorize('patient'), bookAppointment);
 router.get('/', getMyAppointments);
 router.get('/all', authorize('admin'), getAllAppointments);
 router.get('/doctor/:doctorId', authorize('doctor', 'admin'), getDoctorAppointments);
-router.patch('/:id/status', authorize('doctor', 'admin'), updateAppointmentStatus);
+router.patch('/:id/status', updateAppointmentStatus);
 
 export default router;

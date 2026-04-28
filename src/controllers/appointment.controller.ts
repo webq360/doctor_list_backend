@@ -42,7 +42,26 @@ export const getMyAppointments = async (req: AuthRequest, res: Response) => {
   const appointments = await Appointment.find(filter)
     .populate('patientId', 'name phone')
     .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
-    .populate('hospitalId', 'name address contactPersons');
+    .populate('hospitalId', 'name address contactPersons')
+    .sort({ createdAt: -1 }); // Sort by newest first
+  
+  // Auto-delete old history appointments (keep only last 10 completed/cancelled)
+  const historyAppointments = appointments.filter(a => 
+    a.status === 'completed' || a.status === 'cancelled'
+  );
+  
+  if (historyAppointments.length > 10) {
+    const appointmentsToDelete = historyAppointments.slice(10);
+    const idsToDelete = appointmentsToDelete.map(a => a._id);
+    await Appointment.deleteMany({ _id: { $in: idsToDelete } });
+    
+    // Return updated list without deleted appointments
+    const updatedAppointments = appointments.filter(a => 
+      !idsToDelete.some(id => id.toString() === a._id.toString())
+    );
+    return res.json(updatedAppointments);
+  }
+  
   res.json(appointments);
 };
 
@@ -55,6 +74,22 @@ export const getDoctorAppointments = async (req: AuthRequest, res: Response) => 
 
 export const updateAppointmentStatus = async (req: AuthRequest, res: Response) => {
   const { status, statusChangeMessage, serialNumber } = req.body;
+  
+  // Find the appointment first to check permissions
+  const existingAppointment = await Appointment.findById(req.params.id);
+  if (!existingAppointment) return res.status(404).json({ message: 'Appointment not found' });
+  
+  // Check permissions: 
+  // - Patients can only cancel their own appointments
+  // - Doctors and admins can update any appointment status
+  if (req.user!.role === 'patient') {
+    if (existingAppointment.patientId.toString() !== req.user!.id) {
+      return res.status(403).json({ message: 'You can only update your own appointments' });
+    }
+    if (status !== 'cancelled') {
+      return res.status(403).json({ message: 'Patients can only cancel appointments' });
+    }
+  }
   
   const updateData: any = { status, statusChangeMessage };
   
