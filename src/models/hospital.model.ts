@@ -15,6 +15,7 @@ export interface IHospital extends Document {
   }>;
   status?: 'active' | 'paused';
   showInHome?: boolean;  // New field for home page visibility
+  isPopular?: boolean;   // Mark hospital as popular
   // Legacy fields for backward compatibility
   contactPersonName?: string;
   contactPersonDesignation?: string;
@@ -45,6 +46,7 @@ const hospitalSchema = new Schema<IHospital>(
     }],
     status: { type: String, enum: ['active', 'paused'], default: 'active' },
     showInHome: { type: Boolean, default: false },  // New field
+    isPopular: { type: Boolean, default: false },   // Popular hospitals
     // Legacy fields for backward compatibility
     contactPersonName: { type: String },
     contactPersonDesignation: { type: String },

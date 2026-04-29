@@ -9,15 +9,30 @@ const appointment_model_1 = __importDefault(require("../models/appointment.model
 const appointmentSchema = zod_1.z.object({
     doctorId: zod_1.z.string(),
     hospitalId: zod_1.z.string().optional(),
-    date: zod_1.z.string(),
-    time: zod_1.z.string(),
+    date: zod_1.z.string().optional(),
+    time: zod_1.z.string().optional(),
     notes: zod_1.z.string().optional(),
+    // Patient details
+    patientType: zod_1.z.enum(['Myself', 'Others']).default('Myself'),
+    patientName: zod_1.z.string().optional(),
+    patientMobile: zod_1.z.string().optional(),
+    patientAge: zod_1.z.number().optional(),
+    patientGender: zod_1.z.enum(['Male', 'Female', 'Other']).optional(),
+    patientAddress: zod_1.z.string().optional(),
 });
 const bookAppointment = async (req, res) => {
     const parsed = appointmentSchema.safeParse(req.body);
     if (!parsed.success)
         return res.status(400).json({ errors: parsed.error.flatten() });
-    const appointment = await appointment_model_1.default.create({ ...parsed.data, patientId: req.user.id });
+    // Set default date and time if not provided
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    const appointment = await appointment_model_1.default.create({
+        ...parsed.data,
+        patientId: req.user.id,
+        date: parsed.data.date || currentDate,
+        time: parsed.data.time || currentTime,
+    });
     res.status(201).json(appointment);
 };
 exports.bookAppointment = bookAppointment;
@@ -26,7 +41,18 @@ const getMyAppointments = async (req, res) => {
     const appointments = await appointment_model_1.default.find(filter)
         .populate('patientId', 'name phone')
         .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
-        .populate('hospitalId', 'name address contactPersons');
+        .populate('hospitalId', 'name address contactPersons')
+        .sort({ createdAt: -1 }); // Sort by newest first
+    // Auto-delete old history appointments (keep only last 10 completed/cancelled)
+    const historyAppointments = appointments.filter(a => a.status === 'completed' || a.status === 'cancelled');
+    if (historyAppointments.length > 10) {
+        const appointmentsToDelete = historyAppointments.slice(10);
+        const idsToDelete = appointmentsToDelete.map(a => a._id);
+        await appointment_model_1.default.deleteMany({ _id: { $in: idsToDelete } });
+        // Return updated list without deleted appointments
+        const updatedAppointments = appointments.filter(a => !idsToDelete.some(id => id.toString() === a._id.toString()));
+        return res.json(updatedAppointments);
+    }
     res.json(appointments);
 };
 exports.getMyAppointments = getMyAppointments;
@@ -38,8 +64,28 @@ const getDoctorAppointments = async (req, res) => {
 };
 exports.getDoctorAppointments = getDoctorAppointments;
 const updateAppointmentStatus = async (req, res) => {
-    const { status, statusChangeMessage } = req.body;
-    const appointment = await appointment_model_1.default.findByIdAndUpdate(req.params.id, { status, statusChangeMessage }, { new: true })
+    const { status, statusChangeMessage, serialNumber } = req.body;
+    // Find the appointment first to check permissions
+    const existingAppointment = await appointment_model_1.default.findById(req.params.id);
+    if (!existingAppointment)
+        return res.status(404).json({ message: 'Appointment not found' });
+    // Check permissions: 
+    // - Patients can only cancel their own appointments
+    // - Doctors and admins can update any appointment status
+    if (req.user.role === 'patient') {
+        if (existingAppointment.patientId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'You can only update your own appointments' });
+        }
+        if (status !== 'cancelled') {
+            return res.status(403).json({ message: 'Patients can only cancel appointments' });
+        }
+    }
+    const updateData = { status, statusChangeMessage };
+    // If manual serial number is provided for confirmed status, use it
+    if (status === 'confirmed' && serialNumber && serialNumber.trim()) {
+        updateData.serialNumber = serialNumber.trim();
+    }
+    const appointment = await appointment_model_1.default.findByIdAndUpdate(req.params.id, updateData, { new: true })
         .populate('patientId', 'name phone')
         .populate({ path: 'doctorId', populate: { path: 'userId', select: 'name' } })
         .populate('hospitalId', 'name address contactPersons');

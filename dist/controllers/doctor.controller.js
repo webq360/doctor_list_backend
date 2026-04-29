@@ -58,7 +58,32 @@ const getDoctorById = async (req, res) => {
         .populate('departments', 'title description');
     if (!doctor)
         return res.status(404).json({ message: 'Doctor not found' });
-    res.json(doctor);
+    // Ensure all fields are included in the response
+    const response = {
+        _id: doctor._id,
+        userId: doctor.userId,
+        specializations: doctor.specializations || [],
+        specialization: doctor.specializations?.[0] || 'General Practitioner',
+        experience: doctor.experience || 0,
+        fees: doctor.fees || 0,
+        bio: doctor.bio || '',
+        isApproved: doctor.isApproved || false,
+        location: doctor.location || {},
+        rating: doctor.rating || 0,
+        ratingCount: doctor.ratingCount || 0,
+        profileImage: doctor.profileImage,
+        hospitalId: doctor.hospitalId,
+        hospitalIds: doctor.hospitalIds || [],
+        schedule: doctor.schedule || [],
+        education: doctor.education || [],
+        workExperience: doctor.workExperience || [],
+        diseasesTitle: doctor.diseasesTitle,
+        diseasesDescription: doctor.diseasesDescription,
+        educationTitle: doctor.educationTitle,
+        educationDescription: doctor.educationDescription,
+        departments: doctor.departments || [],
+    };
+    res.json(response);
 };
 exports.getDoctorById = getDoctorById;
 const updateDoctorProfile = async (req, res) => {

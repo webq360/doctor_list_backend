@@ -11,5 +11,5 @@ router.post('/', (0, auth_middleware_1.authorize)('patient'), appointment_contro
 router.get('/', appointment_controller_1.getMyAppointments);
 router.get('/all', (0, auth_middleware_1.authorize)('admin'), appointment_controller_1.getAllAppointments);
 router.get('/doctor/:doctorId', (0, auth_middleware_1.authorize)('doctor', 'admin'), appointment_controller_1.getDoctorAppointments);
-router.patch('/:id/status', (0, auth_middleware_1.authorize)('doctor', 'admin'), appointment_controller_1.updateAppointmentStatus);
+router.patch('/:id/status', appointment_controller_1.updateAppointmentStatus);
 exports.default = router;

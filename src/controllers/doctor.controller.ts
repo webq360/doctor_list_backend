@@ -25,27 +25,110 @@ export const createDoctorProfile = async (req: AuthRequest, res: Response) => {
 };
 
 export const getAllDoctors = async (req: Request, res: Response) => {
-  const { name, specialization, division, district, upazila } = req.query;
-  const filter: Record<string, unknown> = { isApproved: true };
+  try {
+    const { name, specialization, division, district, upazila, isPopular, departmentId } = req.query;
+    
+    // Build the base filter
+    const filter: Record<string, unknown> = { isApproved: true };
 
-  if (specialization) filter['specializations'] = { $elemMatch: { $regex: specialization as string, $options: 'i' } };
-  if (division) filter['location.division'] = new RegExp(division as string, 'i');
-  if (district) filter['location.district'] = new RegExp(district as string, 'i');
-  if (upazila) filter['location.upazila'] = new RegExp(upazila as string, 'i');
+    if (isPopular === 'true') {
+      filter['isPopular'] = true;
+    }
 
-  let doctors = await Doctor.find(filter)
-    .populate('userId', 'name email phone')
-    .populate('hospitalId', 'name address logo')
-    .populate('hospitalIds', 'name address division district upazila')
-    .populate('departments', 'title description');
+    if (specialization) {
+      filter['specializations'] = { $elemMatch: { $regex: specialization as string, $options: 'i' } };
+    }
 
-  // Filter by name (from populated userId)
-  if (name) {
-    const n = (name as string).toLowerCase();
-    doctors = doctors.filter((d: any) => d.userId?.name?.toLowerCase().includes(n));
+    if (departmentId) {
+      filter['departments'] = departmentId;
+    }
+
+    // If location filter is provided, we need to use aggregation to filter by hospital location
+    if (division || district || upazila) {
+      console.log('📍 Location filter requested:', { division, district, upazila });
+      
+      const locationMatch: any = {};
+      
+      if (division) {
+        locationMatch['hospitals.division'] = { $regex: division as string, $options: 'i' };
+      }
+      if (district) {
+        locationMatch['hospitals.district'] = { $regex: district as string, $options: 'i' };
+      }
+      if (upazila) {
+        locationMatch['hospitals.upazila'] = { $regex: upazila as string, $options: 'i' };
+      }
+
+      const pipeline: any[] = [
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'hospitals',
+            localField: 'hospitalIds',
+            foreignField: '_id',
+            as: 'hospitals'
+          }
+        },
+        {
+          $match: locationMatch
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId'
+          }
+        },
+        {
+          $unwind: { path: '$userId', preserveNullAndEmptyArrays: true }
+        },
+        {
+          $lookup: {
+            from: 'departments',
+            localField: 'departments',
+            foreignField: '_id',
+            as: 'departments'
+          }
+        }
+      ];
+
+      let doctors = await Doctor.aggregate(pipeline);
+      console.log('✅ Doctors found after location filter:', doctors.length);
+
+      // Filter by name if provided
+      if (name) {
+        const n = (name as string).toLowerCase();
+        doctors = doctors.filter((d: any) => 
+          d.userId?.name?.toLowerCase().includes(n)
+        );
+        console.log('✅ Doctors found after name filter:', doctors.length);
+      }
+
+      return res.json(doctors);
+    }
+
+    // If no location filter, use simple find with populate
+    let doctors = await Doctor.find(filter)
+      .populate('userId', 'name email phone')
+      .populate('hospitalId', 'name address logo')
+      .populate('hospitalIds', 'name address division district upazila')
+      .populate('departments', 'title description');
+
+    console.log('✅ Doctors found (no location filter):', doctors.length);
+
+    // Filter by name if provided
+    if (name) {
+      const n = (name as string).toLowerCase();
+      doctors = doctors.filter((d: any) => d.userId?.name?.toLowerCase().includes(n));
+      console.log('✅ Doctors found after name filter:', doctors.length);
+    }
+
+    res.json(doctors);
+  } catch (err: any) {
+    console.error('❌ Error fetching doctors:', err);
+    res.status(500).json({ message: err.message });
   }
-
-  res.json(doctors);
 };
 
 export const getDoctorById = async (req: Request, res: Response) => {
@@ -95,6 +178,24 @@ export const approveDoctor = async (req: Request, res: Response) => {
   const doctor = await Doctor.findByIdAndUpdate(req.params.id, { isApproved: true }, { new: true });
   if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
   res.json({ message: 'Doctor approved', doctor });
+};
+
+export const togglePopularDoctor = async (req: Request, res: Response) => {
+  try {
+    const { isPopular } = req.body;
+    const doctor = await Doctor.findByIdAndUpdate(
+      req.params.id,
+      { isPopular },
+      { new: true }
+    ).populate('userId', 'name email phone')
+     .populate('hospitalIds', 'name')
+     .populate('departments', 'title description');
+    
+    if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+    res.json({ message: 'Doctor popular status updated', doctor });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const adminCreateDoctor = async (req: Request, res: Response) => {

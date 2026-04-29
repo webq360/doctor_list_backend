@@ -41,13 +41,17 @@ export const createHospital = async (req: Request, res: Response) => {
 };
 
 export const getAllHospitals = async (req: Request, res: Response) => {
-  const { name, division, district, upazila, includeInactive } = req.query;
+  const { name, division, district, upazila, includeInactive, isPopular } = req.query;
   const filter: Record<string, unknown> = {};
 
   // By default, only show active hospitals (for mobile app)
   // Admin can pass includeInactive=true to see all
   if (includeInactive !== 'true') {
     filter['status'] = 'active';
+  }
+
+  if (isPopular === 'true') {
+    filter['isPopular'] = true;
   }
 
   if (division) filter['division'] = new RegExp(division as string, 'i');
@@ -112,6 +116,21 @@ export const toggleShowInHome = async (req: Request, res: Response) => {
     hospital.showInHome = !hospital.showInHome;
     await hospital.save();
     res.json(hospital);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const togglePopularHospital = async (req: Request, res: Response) => {
+  try {
+    const { isPopular } = req.body;
+    const hospital = await Hospital.findByIdAndUpdate(
+      req.params.id,
+      { isPopular },
+      { new: true }
+    );
+    if (!hospital) return res.status(404).json({ message: 'Hospital not found' });
+    res.json({ message: 'Hospital popular status updated', hospital });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }

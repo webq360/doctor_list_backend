@@ -50,6 +50,7 @@ export interface IDoctor extends Document {
   profileImage?: string;
   location?: { division?: string; district?: string; upazila?: string };
   isApproved: boolean;
+  isPopular: boolean;                          // Mark doctor as popular
   rating: number;
   ratingCount: number;
   // New fields for diseases and education
@@ -112,6 +113,7 @@ const doctorSchema = new Schema<IDoctor>(
       upazila: { type: String },
     },
     isApproved: { type: Boolean, default: false },
+    isPopular: { type: Boolean, default: false },
     rating: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
     // New fields for diseases and education

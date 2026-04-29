@@ -5,6 +5,7 @@ import {
   getDoctorById,
   updateDoctorProfile,
   approveDoctor,
+  togglePopularDoctor,
   adminCreateDoctor,
   deleteDoctor,
 } from '../controllers/doctor.controller';
@@ -27,6 +28,7 @@ router.post('/profile', protect, authorize('doctor'), createDoctorProfile);
 router.post('/admin/create', protect, authorize('admin'), adminCreateDoctor);
 router.put('/profile', protect, authorize('doctor'), updateDoctorProfile);
 router.patch('/:id/approve', protect, authorize('admin'), approveDoctor);
+router.patch('/:id/popular', protect, authorize('admin'), togglePopularDoctor);
 router.put('/:id', protect, authorize('admin'), async (req: any, res: any) => {
   try {
     const Doctor = require('../models/doctor.model').default;

@@ -46,10 +46,13 @@ const appointmentSchema = new mongoose_1.Schema({
         default: 'pending',
     },
     notes: { type: String },
-    appointmentFor: { type: String, enum: ['self', 'other'], default: 'self' },
-    appointmentForName: { type: String },
-    appointmentForPhone: { type: String },
-    appointmentForAge: { type: Number },
+    // Patient details
+    patientType: { type: String, enum: ['Myself', 'Others'], default: 'Myself' },
+    patientName: { type: String },
+    patientMobile: { type: String },
+    patientAge: { type: Number },
+    patientGender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    patientAddress: { type: String },
     serialNumber: { type: String, unique: true, sparse: true },
     statusChangeMessage: { type: String },
 }, { timestamps: true });
