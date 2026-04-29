@@ -33,6 +33,7 @@ router.put('/:id', protect, authorize('admin'), async (req: any, res: any) => {
   try {
     const Doctor = require('../models/doctor.model').default;
     const User = require('../models/user.model').default;
+    const Hospital = require('../models/hospital.model').default;
     const { userName, userPhone, newPassword, ...doctorFields } = req.body;
     const doctor = await Doctor.findById(req.params.id);
     if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
@@ -53,6 +54,18 @@ router.put('/:id', protect, authorize('admin'), async (req: any, res: any) => {
       } else {
         // If empty, set to undefined to remove it
         doctorFields.bmdcNumber = undefined;
+      }
+    }
+    
+    // Update location from primary hospital if hospitalIds changed
+    if (doctorFields.hospitalIds && doctorFields.hospitalIds.length > 0) {
+      const primaryHospital = await Hospital.findById(doctorFields.hospitalIds[0]);
+      if (primaryHospital && (primaryHospital.division || primaryHospital.district || primaryHospital.upazila)) {
+        doctorFields.location = {
+          division: primaryHospital.division,
+          district: primaryHospital.district,
+          upazila: primaryHospital.upazila,
+        };
       }
     }
     

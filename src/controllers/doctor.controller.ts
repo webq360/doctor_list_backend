@@ -175,9 +175,14 @@ export const updateDoctorProfile = async (req: AuthRequest, res: Response) => {
 };
 
 export const approveDoctor = async (req: Request, res: Response) => {
-  const doctor = await Doctor.findByIdAndUpdate(req.params.id, { isApproved: true }, { new: true });
+  const { isApproved } = req.body;
+  const doctor = await Doctor.findByIdAndUpdate(
+    req.params.id, 
+    { isApproved: isApproved !== undefined ? isApproved : true }, 
+    { new: true }
+  );
   if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
-  res.json({ message: 'Doctor approved', doctor });
+  res.json({ message: `Doctor ${doctor.isApproved ? 'approved' : 'set to pending'}`, doctor });
 };
 
 export const togglePopularDoctor = async (req: Request, res: Response) => {
@@ -264,7 +269,7 @@ export const adminCreateDoctor = async (req: Request, res: Response) => {
       profileImage,
       location,
       schedule: [], // No schedule on creation
-      isApproved: true,
+      isApproved: false, // Admin needs to approve
     });
 
     // Add doctor to hospitals
