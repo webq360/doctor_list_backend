@@ -12,10 +12,15 @@ export interface IHospital extends Document {
     designation: string;
     mobile: string;
     whatsapp?: string;
+    isPublished?: boolean;
+    isForPatient?: boolean;
+    isForDoctorList?: boolean;
   }>;
   status?: 'active' | 'paused';
   showInHome?: boolean;  // New field for home page visibility
   isPopular?: boolean;   // Mark hospital as popular
+  callActive?: boolean;  // Enable/disable call functionality
+  bookAppointmentActive?: boolean;  // Enable/disable appointment booking
   // Legacy fields for backward compatibility
   contactPersonName?: string;
   contactPersonDesignation?: string;
@@ -43,10 +48,15 @@ const hospitalSchema = new Schema<IHospital>(
       designation: { type: String, required: true },
       mobile: { type: String, required: true },
       whatsapp: { type: String },
+      isPublished: { type: Boolean, default: false },
+      isForPatient: { type: Boolean, default: false },
+      isForDoctorList: { type: Boolean, default: false },
     }],
     status: { type: String, enum: ['active', 'paused'], default: 'active' },
     showInHome: { type: Boolean, default: false },  // New field
     isPopular: { type: Boolean, default: false },   // Popular hospitals
+    callActive: { type: Boolean, default: true },   // Call functionality
+    bookAppointmentActive: { type: Boolean, default: true },  // Appointment booking
     // Legacy fields for backward compatibility
     contactPersonName: { type: String },
     contactPersonDesignation: { type: String },
