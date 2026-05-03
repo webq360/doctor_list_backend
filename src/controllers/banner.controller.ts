@@ -8,7 +8,9 @@ export const getBanners = async (req: Request, res: Response) => {
     const filter: any = { isActive: true };
     if (category) filter.category = category;
 
-    if (upazila || district || division) {
+    // If location parameters are provided, use location-based filtering
+    // Otherwise, return only global banners (no location set)
+    if (division || district || upazila) {
       // Priority-based location matching:
       // 1. Exact match (division + district + upazila)
       // 2. Division + District match
@@ -17,30 +19,7 @@ export const getBanners = async (req: Request, res: Response) => {
       
       const locationConditions: any[] = [];
       
-      // Global banners (no location set)
-      locationConditions.push({ location: { $exists: false } });
-      locationConditions.push({ 'location.division': { $exists: false } });
-      locationConditions.push({ 'location.division': null });
-      
-      // Division only
-      if (division) {
-        locationConditions.push({ 
-          'location.division': division, 
-          'location.district': { $in: [null, undefined, ''] }, 
-          'location.upazila': { $in: [null, undefined, ''] } 
-        });
-      }
-      
-      // Division + District
-      if (division && district) {
-        locationConditions.push({ 
-          'location.division': division, 
-          'location.district': district, 
-          'location.upazila': { $in: [null, undefined, ''] } 
-        });
-      }
-      
-      // Exact match (division + district + upazila)
+      // Exact match (division + district + upazila) - highest priority
       if (division && district && upazila) {
         locationConditions.push({ 
           'location.division': division, 
@@ -49,7 +28,37 @@ export const getBanners = async (req: Request, res: Response) => {
         });
       }
       
+      // Division + District match
+      if (division && district) {
+        locationConditions.push({ 
+          'location.division': division, 
+          'location.district': district, 
+          'location.upazila': { $in: [null, undefined, ''] } 
+        });
+      }
+      
+      // Division only match
+      if (division) {
+        locationConditions.push({ 
+          'location.division': division, 
+          'location.district': { $in: [null, undefined, ''] }, 
+          'location.upazila': { $in: [null, undefined, ''] } 
+        });
+      }
+      
+      // Global banners (no location set) - lowest priority
+      locationConditions.push({ location: { $exists: false } });
+      locationConditions.push({ 'location.division': { $exists: false } });
+      locationConditions.push({ 'location.division': null });
+      
       filter.$or = locationConditions;
+    } else {
+      // No location parameters provided - return only global banners
+      filter.$or = [
+        { location: { $exists: false } },
+        { 'location.division': { $exists: false } },
+        { 'location.division': null }
+      ];
     }
 
     const banners = await Banner.find(filter).sort({ order: 1 });
