@@ -19,10 +19,12 @@ router.post('/profile', auth_middleware_1.protect, (0, auth_middleware_1.authori
 router.post('/admin/create', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), doctor_controller_1.adminCreateDoctor);
 router.put('/profile', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('doctor'), doctor_controller_1.updateDoctorProfile);
 router.patch('/:id/approve', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), doctor_controller_1.approveDoctor);
+router.patch('/:id/popular', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), doctor_controller_1.togglePopularDoctor);
 router.put('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), async (req, res) => {
     try {
         const Doctor = require('../models/doctor.model').default;
         const User = require('../models/user.model').default;
+        const Hospital = require('../models/hospital.model').default;
         const { userName, userPhone, newPassword, ...doctorFields } = req.body;
         const doctor = await Doctor.findById(req.params.id);
         if (!doctor)
@@ -44,6 +46,17 @@ router.put('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('
             else {
                 // If empty, set to undefined to remove it
                 doctorFields.bmdcNumber = undefined;
+            }
+        }
+        // Update location from primary hospital if hospitalIds changed
+        if (doctorFields.hospitalIds && doctorFields.hospitalIds.length > 0) {
+            const primaryHospital = await Hospital.findById(doctorFields.hospitalIds[0]);
+            if (primaryHospital && (primaryHospital.division || primaryHospital.district || primaryHospital.upazila)) {
+                doctorFields.location = {
+                    division: primaryHospital.division,
+                    district: primaryHospital.district,
+                    upazila: primaryHospital.upazila,
+                };
             }
         }
         // Remove fields that are undefined or null (but keep empty strings for diseases fields)

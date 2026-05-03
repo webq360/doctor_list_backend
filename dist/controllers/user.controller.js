@@ -13,7 +13,7 @@ const getMe = async (req, res) => {
 };
 exports.getMe = getMe;
 const updateMe = async (req, res) => {
-    const { name, email, phone, imageUrl } = req.body;
+    const { name, email, phone, imageUrl, division, district, upazila } = req.body;
     const update = {};
     if (name)
         update.name = name;
@@ -23,6 +23,12 @@ const updateMe = async (req, res) => {
         update.phone = phone;
     if (imageUrl !== undefined)
         update.imageUrl = imageUrl;
+    if (division)
+        update.division = division;
+    if (district)
+        update.district = district;
+    if (upazila)
+        update.upazila = upazila;
     const user = await user_model_1.default.findByIdAndUpdate(req.user.id, update, { new: true }).select('-password');
     res.json(user);
 };

@@ -10,6 +10,7 @@ router.post('/', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('ad
 // Specific routes before :id routes
 router.patch('/:id/toggle-status', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.toggleHospitalStatus);
 router.patch('/:id/toggle-show-in-home', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.toggleShowInHome);
+router.patch('/:id/popular', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.togglePopularHospital);
 // General :id routes
 router.get('/:id', hospital_controller_1.getHospitalById);
 router.put('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), hospital_controller_1.updateHospital);

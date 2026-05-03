@@ -49,9 +49,15 @@ const hospitalSchema = new mongoose_1.Schema({
             designation: { type: String, required: true },
             mobile: { type: String, required: true },
             whatsapp: { type: String },
+            isPublished: { type: Boolean, default: false },
+            isForPatient: { type: Boolean, default: false },
+            isForDoctorList: { type: Boolean, default: false },
         }],
     status: { type: String, enum: ['active', 'paused'], default: 'active' },
     showInHome: { type: Boolean, default: false }, // New field
+    isPopular: { type: Boolean, default: false }, // Popular hospitals
+    callActive: { type: Boolean, default: true }, // Call functionality
+    bookAppointmentActive: { type: Boolean, default: true }, // Appointment booking
     // Legacy fields for backward compatibility
     contactPersonName: { type: String },
     contactPersonDesignation: { type: String },

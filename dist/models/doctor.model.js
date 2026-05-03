@@ -81,6 +81,7 @@ const doctorSchema = new mongoose_1.Schema({
         upazila: { type: String },
     },
     isApproved: { type: Boolean, default: false },
+    isPopular: { type: Boolean, default: false },
     rating: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
     // New fields for diseases and education

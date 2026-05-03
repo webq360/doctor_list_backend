@@ -47,6 +47,9 @@ const userSchema = new mongoose_1.Schema({
     role: { type: String, enum: ['patient', 'doctor', 'admin', 'ambulance_user'], default: 'patient' },
     isActive: { type: Boolean, default: true },
     fcmToken: { type: String },
+    division: { type: String },
+    district: { type: String },
+    upazila: { type: String },
 }, { timestamps: true });
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password'))

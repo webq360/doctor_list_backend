@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeHospitalService = exports.updateHospitalService = exports.addHospitalService = exports.getHospitalServices = exports.removeAmbulanceFromHospital = exports.addAmbulanceToHospital = exports.getHospitalAmbulances = exports.getDoctorHospitalSchedule = exports.setDoctorHospitalSchedule = exports.removeDoctorFromHospital = exports.addDoctorToHospital = exports.getHospitalDoctors = exports.deleteHospital = exports.toggleShowInHome = exports.toggleHospitalStatus = exports.updateHospital = exports.getNearestHospitals = exports.getHospitalById = exports.getAllHospitals = exports.createHospital = void 0;
+exports.removeHospitalService = exports.updateHospitalService = exports.addHospitalService = exports.getHospitalServices = exports.removeAmbulanceFromHospital = exports.addAmbulanceToHospital = exports.getHospitalAmbulances = exports.getDoctorHospitalSchedule = exports.setDoctorHospitalSchedule = exports.removeDoctorFromHospital = exports.addDoctorToHospital = exports.getHospitalDoctors = exports.deleteHospital = exports.togglePopularHospital = exports.toggleShowInHome = exports.toggleHospitalStatus = exports.updateHospital = exports.getNearestHospitals = exports.getHospitalById = exports.getAllHospitals = exports.createHospital = void 0;
 const zod_1 = require("zod");
 const hospital_model_1 = __importDefault(require("../models/hospital.model"));
 const doctor_model_1 = __importDefault(require("../models/doctor.model"));
@@ -22,7 +22,15 @@ const hospitalSchema = zod_1.z.object({
         designation: zod_1.z.string().min(1),
         mobile: zod_1.z.string().min(1),
         whatsapp: zod_1.z.string().optional(),
+        isPublished: zod_1.z.boolean().optional(),
+        isForPatient: zod_1.z.boolean().optional(),
+        isForDoctorList: zod_1.z.boolean().optional(),
     })).optional(),
+    status: zod_1.z.enum(['active', 'paused']).optional(),
+    showInHome: zod_1.z.boolean().optional(),
+    isPopular: zod_1.z.boolean().optional(),
+    callActive: zod_1.z.boolean().optional(),
+    bookAppointmentActive: zod_1.z.boolean().optional(),
     // Legacy fields for backward compatibility
     contactPersonName: zod_1.z.string().optional(),
     contactPersonDesignation: zod_1.z.string().optional(),
@@ -46,12 +54,15 @@ const createHospital = async (req, res) => {
 };
 exports.createHospital = createHospital;
 const getAllHospitals = async (req, res) => {
-    const { name, division, district, upazila, includeInactive } = req.query;
+    const { name, division, district, upazila, includeInactive, isPopular } = req.query;
     const filter = {};
     // By default, only show active hospitals (for mobile app)
     // Admin can pass includeInactive=true to see all
     if (includeInactive !== 'true') {
         filter['status'] = 'active';
+    }
+    if (isPopular === 'true') {
+        filter['isPopular'] = true;
     }
     if (division)
         filter['division'] = new RegExp(division, 'i');
@@ -126,6 +137,19 @@ const toggleShowInHome = async (req, res) => {
     }
 };
 exports.toggleShowInHome = toggleShowInHome;
+const togglePopularHospital = async (req, res) => {
+    try {
+        const { isPopular } = req.body;
+        const hospital = await hospital_model_1.default.findByIdAndUpdate(req.params.id, { isPopular }, { new: true });
+        if (!hospital)
+            return res.status(404).json({ message: 'Hospital not found' });
+        res.json({ message: 'Hospital popular status updated', hospital });
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.togglePopularHospital = togglePopularHospital;
 const deleteHospital = async (req, res) => {
     await hospital_model_1.default.findByIdAndDelete(req.params.id);
     res.json({ message: 'Hospital deleted' });
