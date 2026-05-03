@@ -6,6 +6,7 @@ const router = Router();
 
 router.get('/me', protect, getMe);
 router.put('/me', protect, updateMe);
+router.patch('/me', protect, updateMe);
 router.put('/me/password', protect, changePassword);
 router.post('/fcm-token', protect, saveFcmToken);
 

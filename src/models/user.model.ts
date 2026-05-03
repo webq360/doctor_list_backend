@@ -10,6 +10,9 @@ export interface IUser extends Document {
   role: 'patient' | 'doctor' | 'admin' | 'ambulance_user';
   isActive: boolean;
   fcmToken?: string;
+  division?: string;
+  district?: string;
+  upazila?: string;
   comparePassword(password: string): Promise<boolean>;
 }
 
@@ -23,6 +26,9 @@ const userSchema = new Schema<IUser>(
     role: { type: String, enum: ['patient', 'doctor', 'admin', 'ambulance_user'], default: 'patient' },
     isActive: { type: Boolean, default: true },
     fcmToken: { type: String },
+    division: { type: String },
+    district: { type: String },
+    upazila: { type: String },
   },
   { timestamps: true }
 );

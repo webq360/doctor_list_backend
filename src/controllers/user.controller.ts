@@ -9,12 +9,15 @@ export const getMe = async (req: Request, res: Response) => {
 };
 
 export const updateMe = async (req: Request, res: Response) => {
-  const { name, email, phone, imageUrl } = req.body;
+  const { name, email, phone, imageUrl, division, district, upazila } = req.body;
   const update: any = {};
   if (name) update.name = name;
   if (email) update.email = email;
   if (phone) update.phone = phone;
   if (imageUrl !== undefined) update.imageUrl = imageUrl;
+  if (division) update.division = division;
+  if (district) update.district = district;
+  if (upazila) update.upazila = upazila;
   const user = await User.findByIdAndUpdate(
     (req as any).user.id,
     update,
