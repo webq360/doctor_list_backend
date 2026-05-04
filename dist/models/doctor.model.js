@@ -56,6 +56,15 @@ const experienceSchema = new mongoose_1.Schema({
     organization: { type: String, required: true },
     duration: { type: String, required: true }
 }, { _id: false });
+const educationExperienceSchema = new mongoose_1.Schema({
+    title: { type: String, required: true },
+    description: { type: String, required: true }
+}, { _id: false });
+const locationSchema = new mongoose_1.Schema({
+    division: { type: String },
+    district: { type: String },
+    upazila: { type: String }
+}, { _id: false });
 const doctorSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     bmdcNumber: { type: String, unique: true, sparse: true },
@@ -80,6 +89,7 @@ const doctorSchema = new mongoose_1.Schema({
         district: { type: String },
         upazila: { type: String },
     },
+    locations: [locationSchema], // Multiple locations array
     isApproved: { type: Boolean, default: false },
     isPopular: { type: Boolean, default: false },
     rating: { type: Number, default: 0 },
@@ -90,5 +100,6 @@ const doctorSchema = new mongoose_1.Schema({
     education: [educationSchema],
     educationTitle: { type: String },
     educationDescription: { type: String },
+    educationExperience: [educationExperienceSchema], // New array format
 }, { timestamps: true });
 exports.default = mongoose_1.default.model('Doctor', doctorSchema);

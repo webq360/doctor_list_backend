@@ -43,79 +43,42 @@ export const getAllDoctors = async (req: Request, res: Response) => {
       filter['departments'] = departmentId;
     }
 
-    // If location filter is provided, we need to use aggregation to filter by hospital location
+    // If location filter is provided, match against locations array
     if (division || district || upazila) {
       console.log('📍 Location filter requested:', { division, district, upazila });
       
       const locationMatch: any = {};
       
       if (division) {
-        locationMatch['hospitals.division'] = { $regex: division as string, $options: 'i' };
+        locationMatch['locations.division'] = { $regex: division as string, $options: 'i' };
       }
       if (district) {
-        locationMatch['hospitals.district'] = { $regex: district as string, $options: 'i' };
+        locationMatch['locations.district'] = { $regex: district as string, $options: 'i' };
       }
       if (upazila) {
-        locationMatch['hospitals.upazila'] = { $regex: upazila as string, $options: 'i' };
+        locationMatch['locations.upazila'] = { $regex: upazila as string, $options: 'i' };
       }
 
-      const pipeline: any[] = [
-        { $match: filter },
+      // Add location filter to base filter
+      filter['$or'] = [
+        locationMatch,
+        // Also check legacy location field for backward compatibility
         {
-          $lookup: {
-            from: 'hospitals',
-            localField: 'hospitalIds',
-            foreignField: '_id',
-            as: 'hospitals'
-          }
-        },
-        {
-          $match: locationMatch
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'userId',
-            foreignField: '_id',
-            as: 'userId'
-          }
-        },
-        {
-          $unwind: { path: '$userId', preserveNullAndEmptyArrays: true }
-        },
-        {
-          $lookup: {
-            from: 'departments',
-            localField: 'departments',
-            foreignField: '_id',
-            as: 'departments'
-          }
+          ...(division && { 'location.division': { $regex: division as string, $options: 'i' } }),
+          ...(district && { 'location.district': { $regex: district as string, $options: 'i' } }),
+          ...(upazila && { 'location.upazila': { $regex: upazila as string, $options: 'i' } })
         }
       ];
-
-      let doctors = await Doctor.aggregate(pipeline);
-      console.log('✅ Doctors found after location filter:', doctors.length);
-
-      // Filter by name if provided
-      if (name) {
-        const n = (name as string).toLowerCase();
-        doctors = doctors.filter((d: any) => 
-          d.userId?.name?.toLowerCase().includes(n)
-        );
-        console.log('✅ Doctors found after name filter:', doctors.length);
-      }
-
-      return res.json(doctors);
     }
 
-    // If no location filter, use simple find with populate
+    // Use simple find with populate
     let doctors = await Doctor.find(filter)
       .populate('userId', 'name email phone')
       .populate('hospitalId', 'name address logo')
       .populate('hospitalIds', 'name address division district upazila')
       .populate('departments', 'title description');
 
-    console.log('✅ Doctors found (no location filter):', doctors.length);
+    console.log('✅ Doctors found:', doctors.length);
 
     // Filter by name if provided
     if (name) {
@@ -150,6 +113,7 @@ export const getDoctorById = async (req: Request, res: Response) => {
     bio: doctor.bio || '',
     isApproved: doctor.isApproved || false,
     location: doctor.location || {},
+    locations: doctor.locations || [],  // Multiple locations array
     rating: doctor.rating || 0,
     ratingCount: doctor.ratingCount || 0,
     profileImage: doctor.profileImage,
@@ -162,6 +126,7 @@ export const getDoctorById = async (req: Request, res: Response) => {
     diseasesDescription: doctor.diseasesDescription,
     educationTitle: doctor.educationTitle,
     educationDescription: doctor.educationDescription,
+    educationExperience: doctor.educationExperience || [],  // New field
     departments: doctor.departments || [],
   };
   
@@ -205,7 +170,7 @@ export const togglePopularDoctor = async (req: Request, res: Response) => {
 
 export const adminCreateDoctor = async (req: Request, res: Response) => {
   try {
-    const { name, phone, bmdcNumber, specializations, departments, experience, fees, bio, hospitalIds, profileImage } = req.body;
+    const { name, phone, bmdcNumber, specializations, departments, experience, fees, bio, hospitalIds, profileImage, locations } = req.body;
     if (!name || !fees) {
       return res.status(400).json({ message: 'name and fees are required' });
     }
@@ -242,17 +207,17 @@ export const adminCreateDoctor = async (req: Request, res: Response) => {
       user = await User.create({ name, email, password: defaultPassword, role: 'doctor' });
     }
 
-    // Get location from primary hospital if hospitals are selected
-    let location;
-    if (hospitalIds && hospitalIds.length > 0) {
+    // Get location from primary hospital if hospitals are selected and no locations provided
+    let doctorLocations = locations || [];
+    if ((!doctorLocations || doctorLocations.length === 0) && hospitalIds && hospitalIds.length > 0) {
       const Hospital = require('../models/hospital.model').default;
       const primaryHospital = await Hospital.findById(hospitalIds[0]);
       if (primaryHospital && (primaryHospital.division || primaryHospital.district || primaryHospital.upazila)) {
-        location = {
+        doctorLocations = [{
           division: primaryHospital.division,
           district: primaryHospital.district,
           upazila: primaryHospital.upazila,
-        };
+        }];
       }
     }
 
@@ -267,7 +232,7 @@ export const adminCreateDoctor = async (req: Request, res: Response) => {
       hospitalIds: hospitalIds || [],
       hospitalId: hospitalIds?.[0] || undefined, // Set first hospital as primary
       profileImage,
-      location,
+      locations: doctorLocations,  // Multiple locations array
       schedule: [], // No schedule on creation
       isApproved: false, // Admin needs to approve
     });

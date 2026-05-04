@@ -48,21 +48,26 @@ router.put('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('
                 doctorFields.bmdcNumber = undefined;
             }
         }
-        // Update location from primary hospital if hospitalIds changed
-        if (doctorFields.hospitalIds && doctorFields.hospitalIds.length > 0) {
+        // Update locations from primary hospital if hospitalIds changed AND locations not manually set
+        if (doctorFields.hospitalIds && doctorFields.hospitalIds.length > 0 && !doctorFields.locations) {
             const primaryHospital = await Hospital.findById(doctorFields.hospitalIds[0]);
             if (primaryHospital && (primaryHospital.division || primaryHospital.district || primaryHospital.upazila)) {
-                doctorFields.location = {
-                    division: primaryHospital.division,
-                    district: primaryHospital.district,
-                    upazila: primaryHospital.upazila,
-                };
+                doctorFields.locations = [{
+                        division: primaryHospital.division,
+                        district: primaryHospital.district,
+                        upazila: primaryHospital.upazila,
+                    }];
             }
         }
         // Remove fields that are undefined or null (but keep empty strings for diseases fields)
         Object.keys(doctorFields).forEach(key => {
-            // Allow empty strings for diseasesTitle and diseasesDescription
-            if (key === 'diseasesTitle' || key === 'diseasesDescription') {
+            // Allow empty strings for diseasesTitle, diseasesDescription, educationTitle, educationDescription
+            if (key === 'diseasesTitle' || key === 'diseasesDescription' ||
+                key === 'educationTitle' || key === 'educationDescription') {
+                return;
+            }
+            // Allow arrays (educationExperience, diseases, locations, etc.)
+            if (Array.isArray(doctorFields[key])) {
                 return;
             }
             // Remove undefined, null, or empty strings for other fields

@@ -34,6 +34,19 @@ interface IExperience {
   duration: string;
 }
 
+// Education/Experience entry (new format with title + description)
+interface IEducationExperience {
+  title: string;
+  description: string;
+}
+
+// Location entry (multiple locations support)
+interface ILocation {
+  division?: string;
+  district?: string;
+  upazila?: string;
+}
+
 export interface IDoctor extends Document {
   userId: mongoose.Types.ObjectId;
   bmdcNumber: string;                          // BMDC registration number (unique)
@@ -48,7 +61,8 @@ export interface IDoctor extends Document {
   fees: number;
   bio: string;
   profileImage?: string;
-  location?: { division?: string; district?: string; upazila?: string };
+  location?: { division?: string; district?: string; upazila?: string };  // Legacy single location
+  locations: ILocation[];                      // Multiple locations array
   isApproved: boolean;
   isPopular: boolean;                          // Mark doctor as popular
   rating: number;
@@ -59,6 +73,7 @@ export interface IDoctor extends Document {
   education: IEducation[];
   educationTitle?: string;
   educationDescription?: string;
+  educationExperience: IEducationExperience[];  // New array format
 }
 
 const shiftSchema = new Schema({ 
@@ -87,6 +102,17 @@ const experienceSchema = new Schema({
   duration: { type: String, required: true }
 }, { _id: false });
 
+const educationExperienceSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true }
+}, { _id: false });
+
+const locationSchema = new Schema({
+  division: { type: String },
+  district: { type: String },
+  upazila: { type: String }
+}, { _id: false });
+
 const doctorSchema = new Schema<IDoctor>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
@@ -112,6 +138,7 @@ const doctorSchema = new Schema<IDoctor>(
       district: { type: String },
       upazila: { type: String },
     },
+    locations: [locationSchema],  // Multiple locations array
     isApproved: { type: Boolean, default: false },
     isPopular: { type: Boolean, default: false },
     rating: { type: Number, default: 0 },
@@ -122,6 +149,7 @@ const doctorSchema = new Schema<IDoctor>(
     education: [educationSchema],
     educationTitle: { type: String },
     educationDescription: { type: String },
+    educationExperience: [educationExperienceSchema],  // New array format
   },
   { timestamps: true }
 );
