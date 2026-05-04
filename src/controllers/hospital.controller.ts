@@ -230,11 +230,44 @@ export const getHospitalAmbulances = async (req: Request, res: Response) => {
 };
 
 export const addAmbulanceToHospital = async (req: Request, res: Response) => {
-  const { ambulanceId } = req.body;
-  if (!ambulanceId) return res.status(400).json({ message: 'ambulanceId required' });
-  const ambulance = await Ambulance.findByIdAndUpdate(ambulanceId, { hospitalId: req.params.id }, { new: true });
-  if (!ambulance) return res.status(404).json({ message: 'Ambulance not found' });
-  res.json(ambulance);
+  const { ambulanceId, userId, hospitalAmbulanceUserId } = req.body;
+  if (!ambulanceId && !userId && !hospitalAmbulanceUserId) {
+    return res.status(400).json({ message: 'ambulanceId, userId, or hospitalAmbulanceUserId required' });
+  }
+
+  try {
+    let updateData: any = { 
+      hospitalId: req.params.id,
+      type: 'hospital' // Set type to hospital
+    };
+
+    // If hospitalAmbulanceUserId is provided, find the ambulance associated with that user
+    if (hospitalAmbulanceUserId && !ambulanceId && !userId) {
+      const ambulance = await Ambulance.findOne({ hospitalAmbulanceUserId });
+      if (!ambulance) {
+        return res.status(404).json({ message: 'No ambulance found for this user' });
+      }
+      const updatedAmbulance = await Ambulance.findByIdAndUpdate(ambulance._id, updateData, { new: true });
+      return res.json(updatedAmbulance);
+    }
+
+    // If userId is provided, find the ambulance associated with that user
+    if (userId && !ambulanceId && !hospitalAmbulanceUserId) {
+      const ambulance = await Ambulance.findOne({ userId });
+      if (!ambulance) {
+        return res.status(404).json({ message: 'No ambulance found for this user' });
+      }
+      const updatedAmbulance = await Ambulance.findByIdAndUpdate(ambulance._id, updateData, { new: true });
+      return res.json(updatedAmbulance);
+    }
+
+    // If ambulanceId is provided, use it directly
+    const ambulance = await Ambulance.findByIdAndUpdate(ambulanceId, updateData, { new: true });
+    if (!ambulance) return res.status(404).json({ message: 'Ambulance not found' });
+    res.json(ambulance);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const removeAmbulanceFromHospital = async (req: Request, res: Response) => {

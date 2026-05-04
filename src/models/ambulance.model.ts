@@ -9,8 +9,10 @@ export interface IAmbulance extends Document {
   ambulanceType: 'AC' | 'Non-AC';
   address: string;
   status: 'available' | 'busy' | 'inactive';
+  type: 'app_user' | 'hospital'; // New field
   hospitalId?: mongoose.Types.ObjectId;
   userId?: mongoose.Types.ObjectId;
+  hospitalAmbulanceUserId?: mongoose.Types.ObjectId; // New field for hospital ambulance users
   driverImage?: string;
   ambulanceImage?: string;
   documents: {
@@ -30,8 +32,10 @@ const ambulanceSchema = new Schema<IAmbulance>(
     ambulanceType: { type: String, enum: ['AC', 'Non-AC'], required: true },
     address: { type: String, required: true },
     status: { type: String, enum: ['available', 'busy', 'inactive'], default: 'available' },
+    type: { type: String, enum: ['app_user', 'hospital'], default: 'app_user' }, // New field
     hospitalId: { type: Schema.Types.ObjectId, ref: 'Hospital' },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    hospitalAmbulanceUserId: { type: Schema.Types.ObjectId, ref: 'HospitalAmbulanceUser' }, // New field
     driverImage: { type: String },
     ambulanceImage: { type: String },
     documents: {

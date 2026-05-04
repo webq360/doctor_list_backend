@@ -8,6 +8,8 @@ import {
   bookAmbulance,
   updateAmbulance,
   updateAmbulanceStatus,
+  getHospitalAmbulanceUsers,
+  createHospitalAmbulance,
 } from '../controllers/ambulance.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 
@@ -31,6 +33,8 @@ const upload = multer({ storage }).fields([
 const router = Router();
 
 router.get('/', getAllAmbulances);
+router.get('/hospital-users', getHospitalAmbulanceUsers);
+router.post('/hospital', upload, createHospitalAmbulance); // New endpoint for hospital ambulances (no auth)
 router.post('/book', protect, bookAmbulance);
 router.post('/', protect, authorize('admin'), upload, registerAmbulance);
 router.put('/:id', protect, authorize('admin'), updateAmbulance);
