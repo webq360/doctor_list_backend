@@ -43,8 +43,10 @@ const ambulanceSchema = new mongoose_1.Schema({
     ambulanceType: { type: String, enum: ['AC', 'Non-AC'], required: true },
     address: { type: String, required: true },
     status: { type: String, enum: ['available', 'busy', 'inactive'], default: 'available' },
+    type: { type: String, enum: ['app_user', 'hospital'], default: 'app_user' }, // New field
     hospitalId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Hospital' },
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    hospitalAmbulanceUserId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'HospitalAmbulanceUser' }, // New field
     driverImage: { type: String },
     ambulanceImage: { type: String },
     documents: {

@@ -3,18 +3,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateAmbulanceStatus = exports.updateAmbulance = exports.bookAmbulance = exports.getAllAmbulances = exports.registerAmbulance = void 0;
+exports.getHospitalAmbulanceUsers = exports.createHospitalAmbulance = exports.updateAmbulanceStatus = exports.updateAmbulance = exports.bookAmbulance = exports.getAllAmbulances = exports.registerAmbulance = void 0;
 const ambulance_model_1 = __importDefault(require("../models/ambulance.model"));
 const user_model_1 = __importDefault(require("../models/user.model"));
+const hospital_ambulance_user_model_1 = __importDefault(require("../models/hospital_ambulance_user.model"));
 const registerAmbulance = async (req, res) => {
     try {
-        const { ambulanceName, driverName, phone, email, vehicleNumber, ambulanceType, address, password, } = req.body;
+        const { ambulanceName, driverName, phone, email, vehicleNumber, ambulanceType, address, password, type = 'app_user', userId, } = req.body;
         if (!ambulanceName || !phone) {
             return res.status(400).json({ message: 'Ambulance name and phone are required' });
         }
         // Create ambulance_user account only if password provided
-        let userId;
-        if (password) {
+        let finalUserId = userId; // Use provided userId or create new one
+        if (password && !userId) {
             const existingUser = email ? await user_model_1.default.findOne({ email }) : null;
             if (existingUser)
                 return res.status(409).json({ message: 'Email already registered' });
@@ -25,7 +26,7 @@ const registerAmbulance = async (req, res) => {
                 password,
                 role: 'ambulance_user',
             });
-            userId = user._id;
+            finalUserId = user._id;
         }
         // Handle uploaded files
         const files = req.files;
@@ -33,7 +34,8 @@ const registerAmbulance = async (req, res) => {
         const ambulance = await ambulance_model_1.default.create({
             ambulanceName, driverName, phone, email, vehicleNumber,
             ambulanceType, address,
-            userId,
+            type, // Set the type
+            userId: finalUserId,
             driverImage: getUrl('driverImage'),
             ambulanceImage: getUrl('ambulanceImage'),
             documents: {
@@ -42,7 +44,7 @@ const registerAmbulance = async (req, res) => {
                 carDocument: getUrl('carDocument'),
             },
         });
-        res.status(201).json({ ambulance, ...(userId ? { user: { id: userId } } : {}) });
+        res.status(201).json({ ambulance, ...(finalUserId ? { user: { id: finalUserId } } : {}) });
     }
     catch (err) {
         res.status(500).json({ message: err.message });
@@ -75,3 +77,50 @@ const updateAmbulanceStatus = async (req, res) => {
     res.json(ambulance);
 };
 exports.updateAmbulanceStatus = updateAmbulanceStatus;
+const createHospitalAmbulance = async (req, res) => {
+    try {
+        const { ambulanceName, driverName, phone, email, vehicleNumber, ambulanceType, address, hospitalAmbulanceUserId, type = 'hospital', } = req.body;
+        console.log('Creating hospital ambulance with:', { ambulanceName, driverName, phone, hospitalAmbulanceUserId, type });
+        if (!ambulanceName || !phone || !hospitalAmbulanceUserId) {
+            return res.status(400).json({ message: 'Ambulance name, phone, and hospitalAmbulanceUserId are required' });
+        }
+        // Handle uploaded files
+        const files = req.files;
+        const getUrl = (key) => files?.[key]?.[0]?.path || undefined;
+        const ambulance = await ambulance_model_1.default.create({
+            ambulanceName, driverName, phone, email, vehicleNumber,
+            ambulanceType, address,
+            type,
+            hospitalAmbulanceUserId,
+            driverImage: getUrl('driverImage'),
+            ambulanceImage: getUrl('ambulanceImage'),
+            documents: {
+                drivingLicence: getUrl('drivingLicence'),
+                nid: getUrl('nid'),
+                carDocument: getUrl('carDocument'),
+            },
+        });
+        console.log('Hospital ambulance created:', ambulance);
+        res.status(201).json({ ambulance });
+    }
+    catch (err) {
+        console.error('Error creating hospital ambulance:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.createHospitalAmbulance = createHospitalAmbulance;
+const getHospitalAmbulanceUsers = async (req, res) => {
+    try {
+        console.log('Fetching hospital ambulance users...');
+        // Get all hospital ambulance users
+        const users = await hospital_ambulance_user_model_1.default.find({ isActive: true }).select('name phone');
+        console.log('Found hospital ambulance users:', users.length);
+        console.log('Users:', users);
+        res.json(users);
+    }
+    catch (err) {
+        console.error('Error in getHospitalAmbulanceUsers:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+exports.getHospitalAmbulanceUsers = getHospitalAmbulanceUsers;

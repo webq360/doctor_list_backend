@@ -26,6 +26,8 @@ const upload = (0, multer_1.default)({ storage }).fields([
 ]);
 const router = (0, express_1.Router)();
 router.get('/', ambulance_controller_1.getAllAmbulances);
+router.get('/hospital-users', ambulance_controller_1.getHospitalAmbulanceUsers);
+router.post('/hospital', upload, ambulance_controller_1.createHospitalAmbulance); // New endpoint for hospital ambulances (no auth)
 router.post('/book', auth_middleware_1.protect, ambulance_controller_1.bookAmbulance);
 router.post('/', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), upload, ambulance_controller_1.registerAmbulance);
 router.put('/:id', auth_middleware_1.protect, (0, auth_middleware_1.authorize)('admin'), ambulance_controller_1.updateAmbulance);

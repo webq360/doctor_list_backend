@@ -229,13 +229,42 @@ const getHospitalAmbulances = async (req, res) => {
 };
 exports.getHospitalAmbulances = getHospitalAmbulances;
 const addAmbulanceToHospital = async (req, res) => {
-    const { ambulanceId } = req.body;
-    if (!ambulanceId)
-        return res.status(400).json({ message: 'ambulanceId required' });
-    const ambulance = await ambulance_model_1.default.findByIdAndUpdate(ambulanceId, { hospitalId: req.params.id }, { new: true });
-    if (!ambulance)
-        return res.status(404).json({ message: 'Ambulance not found' });
-    res.json(ambulance);
+    const { ambulanceId, userId, hospitalAmbulanceUserId } = req.body;
+    if (!ambulanceId && !userId && !hospitalAmbulanceUserId) {
+        return res.status(400).json({ message: 'ambulanceId, userId, or hospitalAmbulanceUserId required' });
+    }
+    try {
+        let updateData = {
+            hospitalId: req.params.id,
+            type: 'hospital' // Set type to hospital
+        };
+        // If hospitalAmbulanceUserId is provided, find the ambulance associated with that user
+        if (hospitalAmbulanceUserId && !ambulanceId && !userId) {
+            const ambulance = await ambulance_model_1.default.findOne({ hospitalAmbulanceUserId });
+            if (!ambulance) {
+                return res.status(404).json({ message: 'No ambulance found for this user' });
+            }
+            const updatedAmbulance = await ambulance_model_1.default.findByIdAndUpdate(ambulance._id, updateData, { new: true });
+            return res.json(updatedAmbulance);
+        }
+        // If userId is provided, find the ambulance associated with that user
+        if (userId && !ambulanceId && !hospitalAmbulanceUserId) {
+            const ambulance = await ambulance_model_1.default.findOne({ userId });
+            if (!ambulance) {
+                return res.status(404).json({ message: 'No ambulance found for this user' });
+            }
+            const updatedAmbulance = await ambulance_model_1.default.findByIdAndUpdate(ambulance._id, updateData, { new: true });
+            return res.json(updatedAmbulance);
+        }
+        // If ambulanceId is provided, use it directly
+        const ambulance = await ambulance_model_1.default.findByIdAndUpdate(ambulanceId, updateData, { new: true });
+        if (!ambulance)
+            return res.status(404).json({ message: 'Ambulance not found' });
+        res.json(ambulance);
+    }
+    catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 exports.addAmbulanceToHospital = addAmbulanceToHospital;
 const removeAmbulanceFromHospital = async (req, res) => {

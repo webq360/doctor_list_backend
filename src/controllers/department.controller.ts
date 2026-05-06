@@ -31,31 +31,35 @@ export const getDepartmentById = async (req: Request, res: Response) => {
 
 export const createDepartment = async (req: Request, res: Response) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, image } = req.body;
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
     }
 
-    const existingDepartment = await Department.findOne({ title: { $regex: new RegExp(`^${title}$`, 'i') } });
+    // Check for exact duplicate (case-insensitive)
+    const existingDepartment = await Department.findOne({ 
+      title: { $regex: new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } 
+    });
     if (existingDepartment) {
       return res.status(409).json({ message: 'Department with this title already exists' });
     }
 
-    const department = await Department.create({ title, description });
+    const department = await Department.create({ title, description, image });
     res.status(201).json(department);
   } catch (err: any) {
+    console.error('Create department error:', err);
     res.status(500).json({ message: err.message });
   }
 };
 
 export const updateDepartment = async (req: Request, res: Response) => {
   try {
-    const { title, description, isActive } = req.body;
+    const { title, description, image, isActive } = req.body;
     
     // Check if title already exists (excluding current department)
     if (title) {
       const existingDepartment = await Department.findOne({ 
-        title: { $regex: new RegExp(`^${title}$`, 'i') },
+        title: { $regex: new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
         _id: { $ne: req.params.id }
       });
       if (existingDepartment) {
@@ -65,13 +69,14 @@ export const updateDepartment = async (req: Request, res: Response) => {
 
     const department = await Department.findByIdAndUpdate(
       req.params.id,
-      { title, description, isActive },
+      { title, description, image, isActive },
       { new: true }
     );
     
     if (!department) return res.status(404).json({ message: 'Department not found' });
     res.json(department);
   } catch (err: any) {
+    console.error('Update department error:', err);
     res.status(500).json({ message: err.message });
   }
 };
