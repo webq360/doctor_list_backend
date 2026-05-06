@@ -41,13 +41,9 @@ const bannerSchema = new mongoose_1.Schema({
     order: { type: Number, default: 0 },
     category: {
         type: String,
-        enum: [
-            'home_slider', 'doctor_list', 'ambulance',
-            'hospital', 'blood_bank', 'physiotherapy',
-            'eye_care', 'dental_clinic', 'drug_rehabilitation',
-            'hearing_aid',
-        ],
+        enum: ['home_slider'],
         required: true,
+        default: 'home_slider',
     },
     location: {
         division: { type: String },

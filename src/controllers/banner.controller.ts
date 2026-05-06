@@ -7,36 +7,50 @@ export const getBanners = async (req: Request, res: Response) => {
     const { category, division, district, upazila } = req.query;
     
     // Build base filter
-    const filter: any = { isActive: true };
-    if (category) filter.category = category;
+    const baseFilter: any = { isActive: true };
+    if (category) baseFilter.category = category;
 
     // If no location parameters provided, return only global banners
     if (!division && !district && !upazila) {
-      filter.$or = [
-        { location: { $exists: false } },
-        { 'location.division': { $exists: false } },
-        { 'location.division': null },
-        { 'location.division': '' }
-      ];
+      const filter = {
+        ...baseFilter,
+        $or: [
+          { location: { $exists: false } },
+          { 'location.division': { $exists: false } },
+          { 'location.division': null },
+          { 'location.division': '' }
+        ]
+      };
       const banners = await Banner.find(filter).sort({ order: 1 });
+      console.log(`📍 Banner API: No location params - returning ${banners.length} global banners`);
       return res.json(banners);
     }
 
-    // Location parameters provided - use priority-based matching
-    const locationConditions: any[] = [];
-    
+    console.log(`📍 Banner API: User location - Division: ${division}, District: ${district}, Upazila: ${upazila}`);
+
+    // Priority-based matching - try from most specific to least specific
+    // Return ONLY the first match found (no mixing)
+
     // Priority 1: Exact match (division + district + upazila)
     if (division && district && upazila) {
-      locationConditions.push({
+      const exactMatch = await Banner.find({
+        ...baseFilter,
         'location.division': division,
         'location.district': district,
         'location.upazila': upazila
-      });
+      }).sort({ order: 1 });
+      
+      if (exactMatch.length > 0) {
+        console.log(`✅ Priority 1: Found ${exactMatch.length} exact match banners (Division + District + Upazila)`);
+        return res.json(exactMatch);
+      }
+      console.log('⏭️ Priority 1: No exact match, trying next...');
     }
     
-    // Priority 2: Division + District (upazila not set)
+    // Priority 2: Division + District (upazila not specified in banner)
     if (division && district) {
-      locationConditions.push({
+      const districtMatch = await Banner.find({
+        ...baseFilter,
         'location.division': division,
         'location.district': district,
         $or: [
@@ -44,36 +58,50 @@ export const getBanners = async (req: Request, res: Response) => {
           { 'location.upazila': null },
           { 'location.upazila': '' }
         ]
-      });
+      }).sort({ order: 1 });
+      
+      if (districtMatch.length > 0) {
+        console.log(`✅ Priority 2: Found ${districtMatch.length} district match banners (Division + District)`);
+        return res.json(districtMatch);
+      }
+      console.log('⏭️ Priority 2: No district match, trying next...');
     }
     
-    // Priority 3: Division only (district not set)
+    // Priority 3: Division only (district not specified in banner)
     if (division) {
-      locationConditions.push({
+      const divisionMatch = await Banner.find({
+        ...baseFilter,
         'location.division': division,
         $or: [
           { 'location.district': { $exists: false } },
           { 'location.district': null },
           { 'location.district': '' }
         ]
-      });
+      }).sort({ order: 1 });
+      
+      if (divisionMatch.length > 0) {
+        console.log(`✅ Priority 3: Found ${divisionMatch.length} division match banners (Division only)`);
+        return res.json(divisionMatch);
+      }
+      console.log('⏭️ Priority 3: No division match, trying global...');
     }
     
-    // Priority 4: Global banners (no location set)
-    locationConditions.push({
+    // Priority 4: Global banners (fallback)
+    const globalBanners = await Banner.find({
+      ...baseFilter,
       $or: [
         { location: { $exists: false } },
         { 'location.division': { $exists: false } },
         { 'location.division': null },
         { 'location.division': '' }
       ]
-    });
+    }).sort({ order: 1 });
     
-    filter.$or = locationConditions;
-    const banners = await Banner.find(filter).sort({ order: 1 });
-    res.json(banners);
+    console.log(`✅ Priority 4: Returning ${globalBanners.length} global banners (fallback)`);
+    res.json(globalBanners);
+    
   } catch (err) {
-    console.error('Banner fetch error:', err);
+    console.error('❌ Banner fetch error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

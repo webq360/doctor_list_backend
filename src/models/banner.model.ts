@@ -1,16 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type BannerCategory =
-  | 'home_slider'
-  | 'doctor_list'
-  | 'ambulance'
-  | 'hospital'
-  | 'blood_bank'
-  | 'physiotherapy'
-  | 'eye_care'
-  | 'dental_clinic'
-  | 'drug_rehabilitation'
-  | 'hearing_aid';
+export type BannerCategory = 'home_slider';
 
 export interface IBanner extends Document {
   imageUrl: string;
@@ -33,13 +23,9 @@ const bannerSchema = new Schema<IBanner>(
     order: { type: Number, default: 0 },
     category: {
       type: String,
-      enum: [
-        'home_slider', 'doctor_list', 'ambulance',
-        'hospital', 'blood_bank', 'physiotherapy',
-        'eye_care', 'dental_clinic', 'drug_rehabilitation',
-        'hearing_aid',
-      ],
+      enum: ['home_slider'],
       required: true,
+      default: 'home_slider',
     },
     location: {
       division: { type: String },
