@@ -8,6 +8,7 @@ const banner_model_1 = __importDefault(require("../models/banner.model"));
 const getBanners = async (req, res) => {
     try {
         const { category, division, district, upazila } = req.query;
+        console.log('📍 Banner API Request:', { category, division, district, upazila });
         // Build base filter
         const baseFilter = { isActive: true };
         if (category)
@@ -38,8 +39,15 @@ const getBanners = async (req, res) => {
                 'location.district': { $regex: district, $options: 'i' },
                 'location.upazila': { $regex: upazila, $options: 'i' }
             }).sort({ order: 1 });
+            console.log(`🔍 Priority 1 Query:`, {
+                'location.division': { $regex: division, $options: 'i' },
+                'location.district': { $regex: district, $options: 'i' },
+                'location.upazila': { $regex: upazila, $options: 'i' }
+            });
+            console.log(`📊 Priority 1 Results: ${exactMatch.length} banners found`);
             if (exactMatch.length > 0) {
                 console.log(`✅ Priority 1: Found ${exactMatch.length} exact match banners (Division + District + Upazila)`);
+                console.log(`📄 Banners:`, exactMatch.map(b => ({ id: b._id, location: b.location })));
                 return res.json(exactMatch);
             }
             console.log('⏭️ Priority 1: No exact match, trying next...');
@@ -56,8 +64,10 @@ const getBanners = async (req, res) => {
                     { 'location.upazila': '' }
                 ]
             }).sort({ order: 1 });
+            console.log(`📊 Priority 2 Results: ${districtMatch.length} banners found`);
             if (districtMatch.length > 0) {
                 console.log(`✅ Priority 2: Found ${districtMatch.length} district match banners (Division + District)`);
+                console.log(`📄 Banners:`, districtMatch.map(b => ({ id: b._id, location: b.location })));
                 return res.json(districtMatch);
             }
             console.log('⏭️ Priority 2: No district match, trying next...');
@@ -73,8 +83,10 @@ const getBanners = async (req, res) => {
                     { 'location.district': '' }
                 ]
             }).sort({ order: 1 });
+            console.log(`📊 Priority 3 Results: ${divisionMatch.length} banners found`);
             if (divisionMatch.length > 0) {
                 console.log(`✅ Priority 3: Found ${divisionMatch.length} division match banners (Division only)`);
+                console.log(`📄 Banners:`, divisionMatch.map(b => ({ id: b._id, location: b.location })));
                 return res.json(divisionMatch);
             }
             console.log('⏭️ Priority 3: No division match, trying global...');
@@ -131,17 +143,25 @@ const createBanner = async (req, res) => {
             // Flat format (legacy)
             bannerLocation = { division, district, upazila };
         }
+        console.log('📍 Banner creation request:', {
+            imageUrl: imageUrl?.substring(0, 50),
+            title,
+            category,
+            location: bannerLocation,
+        });
         const banner = await banner_model_1.default.create({
             imageUrl,
             title,
             order: order || 0,
             category,
             location: bannerLocation,
+            isActive: true, // Ensure banner is active by default
         });
         console.log('✅ Banner created:', {
             id: banner._id,
             category: banner.category,
             location: banner.location,
+            isActive: banner.isActive,
         });
         res.status(201).json(banner);
     }
