@@ -47,28 +47,48 @@ export const getAllDoctors = async (req: Request, res: Response) => {
     if (division || district || upazila) {
       console.log('📍 Location filter requested:', { division, district, upazila });
       
-      const locationMatch: any = {};
+      // Build location match conditions - ALL must match (AND logic)
+      const locationConditions: any[] = [];
       
       if (division) {
-        locationMatch['locations.division'] = { $regex: division as string, $options: 'i' };
+        locationConditions.push({ 'locations.division': { $regex: division as string, $options: 'i' } });
       }
       if (district) {
-        locationMatch['locations.district'] = { $regex: district as string, $options: 'i' };
+        locationConditions.push({ 'locations.district': { $regex: district as string, $options: 'i' } });
       }
       if (upazila) {
-        locationMatch['locations.upazila'] = { $regex: upazila as string, $options: 'i' };
+        locationConditions.push({ 'locations.upazila': { $regex: upazila as string, $options: 'i' } });
       }
 
-      // Add location filter to base filter
-      filter['$or'] = [
-        locationMatch,
-        // Also check legacy location field for backward compatibility
-        {
-          ...(division && { 'location.division': { $regex: division as string, $options: 'i' } }),
-          ...(district && { 'location.district': { $regex: district as string, $options: 'i' } }),
-          ...(upazila && { 'location.upazila': { $regex: upazila as string, $options: 'i' } })
-        }
-      ];
+      // Build legacy location conditions - ALL must match (AND logic)
+      const legacyConditions: any[] = [];
+      
+      if (division) {
+        legacyConditions.push({ 'location.division': { $regex: division as string, $options: 'i' } });
+      }
+      if (district) {
+        legacyConditions.push({ 'location.district': { $regex: district as string, $options: 'i' } });
+      }
+      if (upazila) {
+        legacyConditions.push({ 'location.upazila': { $regex: upazila as string, $options: 'i' } });
+      }
+
+      // Match either: (all location conditions) OR (all legacy conditions)
+      const orConditions: any[] = [];
+      
+      if (locationConditions.length > 0) {
+        orConditions.push({ $and: locationConditions });
+      }
+      
+      if (legacyConditions.length > 0) {
+        orConditions.push({ $and: legacyConditions });
+      }
+      
+      if (orConditions.length > 0) {
+        filter['$or'] = orConditions;
+      }
+      
+      console.log('📍 Location filter query:', JSON.stringify(filter, null, 2));
     }
 
     // Use simple find with populate
@@ -77,6 +97,22 @@ export const getAllDoctors = async (req: Request, res: Response) => {
       .populate('hospitalId', 'name address logo')
       .populate('hospitalIds', 'name address division district upazila')
       .populate('departments', 'title description');
+
+    console.log('✅ Doctors found:', doctors.length);
+
+    // Filter by name if provided
+    if (name) {
+      const n = (name as string).toLowerCase();
+      doctors = doctors.filter((d: any) => d.userId?.name?.toLowerCase().includes(n));
+      console.log('✅ Doctors found after name filter:', doctors.length);
+    }
+
+    res.json(doctors);
+  } catch (err: any) {
+    console.error('❌ Error fetching doctors:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
 
     console.log('✅ Doctors found:', doctors.length);
 
