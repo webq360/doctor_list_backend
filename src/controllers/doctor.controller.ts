@@ -46,6 +46,7 @@ export const getAllDoctors = async (req: Request, res: Response) => {
     // If location filter is provided, match against locations array
     if (division || district || upazila) {
       console.log('📍 Location filter requested:', { division, district, upazila });
+      console.log('📍 isPopular:', isPopular);
       
       // Build location match conditions - ALL must match (AND logic)
       const locationConditions: any[] = [];
@@ -84,6 +85,20 @@ export const getAllDoctors = async (req: Request, res: Response) => {
         orConditions.push({ $and: legacyConditions });
       }
       
+      // Only add fallback for doctors with no location if NOT filtering by popular
+      // If isPopular is true, we want ONLY doctors with matching location
+      if (isPopular !== 'true') {
+        console.log('📍 Adding fallback for doctors with no location data');
+        orConditions.push({ 
+          locations: { $exists: false },
+          location: { $exists: false }
+        });
+        orConditions.push({ 
+          locations: { $size: 0 },
+          location: { $eq: null }
+        });
+      }
+      
       if (orConditions.length > 0) {
         filter['$or'] = orConditions;
       }
@@ -99,22 +114,13 @@ export const getAllDoctors = async (req: Request, res: Response) => {
       .populate('departments', 'title description');
 
     console.log('✅ Doctors found:', doctors.length);
-
-    // Filter by name if provided
-    if (name) {
-      const n = (name as string).toLowerCase();
-      doctors = doctors.filter((d: any) => d.userId?.name?.toLowerCase().includes(n));
-      console.log('✅ Doctors found after name filter:', doctors.length);
+    
+    // Log first doctor's location for debugging
+    if (doctors.length > 0) {
+      console.log('📍 First doctor locations:', JSON.stringify(doctors[0].locations, null, 2));
+      console.log('📍 First doctor legacy location:', JSON.stringify((doctors[0] as any).location, null, 2));
+      console.log('📍 First doctor isPopular:', (doctors[0] as any).isPopular);
     }
-
-    res.json(doctors);
-  } catch (err: any) {
-    console.error('❌ Error fetching doctors:', err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-    console.log('✅ Doctors found:', doctors.length);
 
     // Filter by name if provided
     if (name) {
@@ -275,7 +281,7 @@ export const adminCreateDoctor = async (req: Request, res: Response) => {
       profileImage,
       locations: doctorLocations,  // Multiple locations array
       schedule: [], // No schedule on creation
-      isApproved: false, // Admin needs to approve
+      isApproved: true, // Auto-approve doctors created by admin
     });
 
     // Add doctor to hospitals

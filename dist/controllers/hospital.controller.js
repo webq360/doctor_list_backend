@@ -64,15 +64,63 @@ const getAllHospitals = async (req, res) => {
     if (isPopular === 'true') {
         filter['isPopular'] = true;
     }
-    if (division)
-        filter['division'] = new RegExp(division, 'i');
-    if (district)
-        filter['district'] = new RegExp(district, 'i');
-    if (upazila)
-        filter['upazila'] = new RegExp(upazila, 'i');
+    // If location filter is provided, match against location fields
+    if (division || district || upazila) {
+        console.log('📍 Hospital Location filter requested:', { division, district, upazila });
+        console.log('📍 isPopular:', isPopular);
+        // Build location match conditions - ALL must match (AND logic)
+        const locationConditions = [];
+        if (division) {
+            locationConditions.push({ 'division': { $regex: division, $options: 'i' } });
+        }
+        if (district) {
+            locationConditions.push({ 'district': { $regex: district, $options: 'i' } });
+        }
+        if (upazila) {
+            locationConditions.push({ 'upazila': { $regex: upazila, $options: 'i' } });
+        }
+        // Only add fallback for hospitals with no location if NOT filtering by popular
+        // If isPopular is true, we want ONLY hospitals with matching location
+        const orConditions = [];
+        if (locationConditions.length > 0) {
+            orConditions.push({ $and: locationConditions });
+        }
+        if (isPopular !== 'true') {
+            console.log('📍 Adding fallback for hospitals with no location data');
+            orConditions.push({
+                division: { $exists: false },
+                district: { $exists: false },
+                upazila: { $exists: false }
+            });
+            orConditions.push({
+                division: null,
+                district: null,
+                upazila: null
+            });
+            orConditions.push({
+                division: '',
+                district: '',
+                upazila: ''
+            });
+        }
+        if (orConditions.length > 0) {
+            filter['$or'] = orConditions;
+        }
+        console.log('📍 Hospital location filter query:', JSON.stringify(filter, null, 2));
+    }
     if (name)
         filter['name'] = new RegExp(name, 'i');
     const hospitals = await hospital_model_1.default.find(filter);
+    console.log('✅ Hospitals found:', hospitals.length);
+    // Log first hospital's location for debugging
+    if (hospitals.length > 0) {
+        console.log('📍 First hospital location:', {
+            division: hospitals[0].division,
+            district: hospitals[0].district,
+            upazila: hospitals[0].upazila,
+            isPopular: hospitals[0].isPopular
+        });
+    }
     res.json(hospitals);
 };
 exports.getAllHospitals = getAllHospitals;

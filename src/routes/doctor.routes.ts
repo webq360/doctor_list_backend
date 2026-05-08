@@ -23,6 +23,16 @@ router.get('/all', protect, authorize('admin'), async (req, res) => {
     .populate('departments', 'title description');
   res.json(doctors);
 });
+// Approve all doctors (for migration/setup)
+router.patch('/admin/approve-all', protect, authorize('admin'), async (req, res) => {
+  try {
+    const Doctor = require('../models/doctor.model').default;
+    const result = await Doctor.updateMany({}, { isApproved: true });
+    res.json({ message: `Approved ${result.modifiedCount} doctors`, result });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
+});
 router.get('/:id', getDoctorById);
 router.post('/profile', protect, authorize('doctor'), createDoctorProfile);
 router.post('/admin/create', protect, authorize('admin'), adminCreateDoctor);
@@ -90,6 +100,9 @@ router.put('/:id', protect, authorize('admin'), async (req: any, res: any) => {
         delete doctorFields[key];
       }
     });
+    
+    // Auto-approve doctors when updated by admin
+    doctorFields.isApproved = true;
     
     // Update user info
     if (userName || userPhone || newPassword) {

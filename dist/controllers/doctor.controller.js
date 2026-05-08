@@ -43,26 +43,54 @@ const getAllDoctors = async (req, res) => {
         // If location filter is provided, match against locations array
         if (division || district || upazila) {
             console.log('📍 Location filter requested:', { division, district, upazila });
-            const locationMatch = {};
+            console.log('📍 isPopular:', isPopular);
+            // Build location match conditions - ALL must match (AND logic)
+            const locationConditions = [];
             if (division) {
-                locationMatch['locations.division'] = { $regex: division, $options: 'i' };
+                locationConditions.push({ 'locations.division': { $regex: division, $options: 'i' } });
             }
             if (district) {
-                locationMatch['locations.district'] = { $regex: district, $options: 'i' };
+                locationConditions.push({ 'locations.district': { $regex: district, $options: 'i' } });
             }
             if (upazila) {
-                locationMatch['locations.upazila'] = { $regex: upazila, $options: 'i' };
+                locationConditions.push({ 'locations.upazila': { $regex: upazila, $options: 'i' } });
             }
-            // Add location filter to base filter
-            filter['$or'] = [
-                locationMatch,
-                // Also check legacy location field for backward compatibility
-                {
-                    ...(division && { 'location.division': { $regex: division, $options: 'i' } }),
-                    ...(district && { 'location.district': { $regex: district, $options: 'i' } }),
-                    ...(upazila && { 'location.upazila': { $regex: upazila, $options: 'i' } })
-                }
-            ];
+            // Build legacy location conditions - ALL must match (AND logic)
+            const legacyConditions = [];
+            if (division) {
+                legacyConditions.push({ 'location.division': { $regex: division, $options: 'i' } });
+            }
+            if (district) {
+                legacyConditions.push({ 'location.district': { $regex: district, $options: 'i' } });
+            }
+            if (upazila) {
+                legacyConditions.push({ 'location.upazila': { $regex: upazila, $options: 'i' } });
+            }
+            // Match either: (all location conditions) OR (all legacy conditions)
+            const orConditions = [];
+            if (locationConditions.length > 0) {
+                orConditions.push({ $and: locationConditions });
+            }
+            if (legacyConditions.length > 0) {
+                orConditions.push({ $and: legacyConditions });
+            }
+            // Only add fallback for doctors with no location if NOT filtering by popular
+            // If isPopular is true, we want ONLY doctors with matching location
+            if (isPopular !== 'true') {
+                console.log('📍 Adding fallback for doctors with no location data');
+                orConditions.push({
+                    locations: { $exists: false },
+                    location: { $exists: false }
+                });
+                orConditions.push({
+                    locations: { $size: 0 },
+                    location: { $eq: null }
+                });
+            }
+            if (orConditions.length > 0) {
+                filter['$or'] = orConditions;
+            }
+            console.log('📍 Location filter query:', JSON.stringify(filter, null, 2));
         }
         // Use simple find with populate
         let doctors = await doctor_model_1.default.find(filter)
@@ -71,6 +99,12 @@ const getAllDoctors = async (req, res) => {
             .populate('hospitalIds', 'name address division district upazila')
             .populate('departments', 'title description');
         console.log('✅ Doctors found:', doctors.length);
+        // Log first doctor's location for debugging
+        if (doctors.length > 0) {
+            console.log('📍 First doctor locations:', JSON.stringify(doctors[0].locations, null, 2));
+            console.log('📍 First doctor legacy location:', JSON.stringify(doctors[0].location, null, 2));
+            console.log('📍 First doctor isPopular:', doctors[0].isPopular);
+        }
         // Filter by name if provided
         if (name) {
             const n = name.toLowerCase();
@@ -221,7 +255,7 @@ const adminCreateDoctor = async (req, res) => {
             profileImage,
             locations: doctorLocations, // Multiple locations array
             schedule: [], // No schedule on creation
-            isApproved: false, // Admin needs to approve
+            isApproved: true, // Auto-approve doctors created by admin
         });
         // Add doctor to hospitals
         if (hospitalIds && hospitalIds.length > 0) {
