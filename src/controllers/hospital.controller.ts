@@ -41,6 +41,12 @@ export const createHospital = async (req: Request, res: Response) => {
   try {
     const parsed = hospitalSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ errors: parsed.error.flatten() });
+    
+    // Validate location is provided
+    if (!parsed.data.division || !parsed.data.district || !parsed.data.upazila) {
+      return res.status(400).json({ message: 'Location (division, district, upazila) is required' });
+    }
+    
     const hospital = await Hospital.create(parsed.data);
     res.status(201).json(hospital);
   } catch (err: any) {
@@ -159,9 +165,20 @@ export const getNearestHospitals = async (req: Request, res: Response) => {
 };
 
 export const updateHospital = async (req: Request, res: Response) => {
-  const hospital = await Hospital.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  if (!hospital) return res.status(404).json({ message: 'Hospital not found' });
-  res.json(hospital);
+  try {
+    // Validate location is provided if being updated
+    if (req.body.division !== undefined || req.body.district !== undefined || req.body.upazila !== undefined) {
+      if (!req.body.division || !req.body.district || !req.body.upazila) {
+        return res.status(400).json({ message: 'Location (division, district, upazila) must all be provided together' });
+      }
+    }
+    
+    const hospital = await Hospital.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!hospital) return res.status(404).json({ message: 'Hospital not found' });
+    res.json(hospital);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 export const toggleHospitalStatus = async (req: Request, res: Response) => {

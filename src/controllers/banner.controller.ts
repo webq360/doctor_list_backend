@@ -35,9 +35,9 @@ export const getBanners = async (req: Request, res: Response) => {
     if (division && district && upazila) {
       const exactMatch = await Banner.find({
         ...baseFilter,
-        'location.division': division,
-        'location.district': district,
-        'location.upazila': upazila
+        'location.division': { $regex: division as string, $options: 'i' },
+        'location.district': { $regex: district as string, $options: 'i' },
+        'location.upazila': { $regex: upazila as string, $options: 'i' }
       }).sort({ order: 1 });
       
       if (exactMatch.length > 0) {
@@ -51,8 +51,8 @@ export const getBanners = async (req: Request, res: Response) => {
     if (division && district) {
       const districtMatch = await Banner.find({
         ...baseFilter,
-        'location.division': division,
-        'location.district': district,
+        'location.division': { $regex: division as string, $options: 'i' },
+        'location.district': { $regex: district as string, $options: 'i' },
         $or: [
           { 'location.upazila': { $exists: false } },
           { 'location.upazila': null },
@@ -71,7 +71,7 @@ export const getBanners = async (req: Request, res: Response) => {
     if (division) {
       const divisionMatch = await Banner.find({
         ...baseFilter,
-        'location.division': division,
+        'location.division': { $regex: division as string, $options: 'i' },
         $or: [
           { 'location.district': { $exists: false } },
           { 'location.district': null },

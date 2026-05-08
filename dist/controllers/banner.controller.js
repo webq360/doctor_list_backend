@@ -34,9 +34,9 @@ const getBanners = async (req, res) => {
         if (division && district && upazila) {
             const exactMatch = await banner_model_1.default.find({
                 ...baseFilter,
-                'location.division': division,
-                'location.district': district,
-                'location.upazila': upazila
+                'location.division': { $regex: division, $options: 'i' },
+                'location.district': { $regex: district, $options: 'i' },
+                'location.upazila': { $regex: upazila, $options: 'i' }
             }).sort({ order: 1 });
             if (exactMatch.length > 0) {
                 console.log(`✅ Priority 1: Found ${exactMatch.length} exact match banners (Division + District + Upazila)`);
@@ -48,8 +48,8 @@ const getBanners = async (req, res) => {
         if (division && district) {
             const districtMatch = await banner_model_1.default.find({
                 ...baseFilter,
-                'location.division': division,
-                'location.district': district,
+                'location.division': { $regex: division, $options: 'i' },
+                'location.district': { $regex: district, $options: 'i' },
                 $or: [
                     { 'location.upazila': { $exists: false } },
                     { 'location.upazila': null },
@@ -66,7 +66,7 @@ const getBanners = async (req, res) => {
         if (division) {
             const divisionMatch = await banner_model_1.default.find({
                 ...baseFilter,
-                'location.division': division,
+                'location.division': { $regex: division, $options: 'i' },
                 $or: [
                     { 'location.district': { $exists: false } },
                     { 'location.district': null },
