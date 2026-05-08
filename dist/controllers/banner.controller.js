@@ -114,18 +114,39 @@ const getAllBannersAdmin = async (req, res) => {
 exports.getAllBannersAdmin = getAllBannersAdmin;
 const createBanner = async (req, res) => {
     try {
-        const { imageUrl, title, order, category, division, district, upazila } = req.body;
+        const { imageUrl, title, order, category, division, district, upazila, location } = req.body;
         if (!imageUrl)
             return res.status(400).json({ message: 'imageUrl is required' });
         if (!category)
             return res.status(400).json({ message: 'Category is required' });
+        // Support both formats:
+        // 1. Nested: { location: { division, district, upazila } }
+        // 2. Flat: { division, district, upazila }
+        let bannerLocation = undefined;
+        if (location && location.division) {
+            // Nested format (new)
+            bannerLocation = location;
+        }
+        else if (division) {
+            // Flat format (legacy)
+            bannerLocation = { division, district, upazila };
+        }
         const banner = await banner_model_1.default.create({
-            imageUrl, title, order: order || 0, category,
-            location: (division) ? { division, district, upazila } : undefined,
+            imageUrl,
+            title,
+            order: order || 0,
+            category,
+            location: bannerLocation,
+        });
+        console.log('✅ Banner created:', {
+            id: banner._id,
+            category: banner.category,
+            location: banner.location,
         });
         res.status(201).json(banner);
     }
     catch (err) {
+        console.error('❌ Banner creation error:', err);
         res.status(500).json({ message: err?.message || 'Server error' });
     }
 };
