@@ -38,6 +38,11 @@ router.put('/:id', protect, authorize('admin'), async (req: any, res: any) => {
     const doctor = await Doctor.findById(req.params.id);
     if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
     
+    // Validate locations are provided
+    if (!doctorFields.locations || doctorFields.locations.length === 0) {
+      return res.status(400).json({ message: 'At least one location must be provided' });
+    }
+    
     // Special handling for bmdcNumber - check for duplicates if being updated
     if (doctorFields.bmdcNumber !== undefined) {
       const trimmedBmdc = doctorFields.bmdcNumber?.trim();

@@ -159,6 +159,10 @@ const adminCreateDoctor = async (req, res) => {
         if (!name || !fees) {
             return res.status(400).json({ message: 'name and fees are required' });
         }
+        // Validate locations are provided
+        if (!locations || locations.length === 0) {
+            return res.status(400).json({ message: 'At least one location must be provided' });
+        }
         // Check if BMDC number already exists (only if provided)
         if (bmdcNumber) {
             const existingBmdc = await doctor_model_1.default.findOne({ bmdcNumber });
