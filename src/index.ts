@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -37,6 +38,8 @@ app.use(cors({
   },
   credentials: true
 }));
+// Enable gzip compression for faster response
+app.use(compression());
 app.use(express.json());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 

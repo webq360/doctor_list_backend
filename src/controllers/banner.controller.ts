@@ -23,7 +23,10 @@ export const getBanners = async (req: Request, res: Response) => {
           { 'location.division': '' }
         ]
       };
-      const banners = await Banner.find(filter).sort({ order: 1 });
+      const banners = await Banner.find(filter)
+        .select('imageUrl title order category location')
+        .sort({ order: 1 })
+        .lean();
       console.log(`📍 Banner API: No location params - returning ${banners.length} global banners`);
       return res.json(banners);
     }
@@ -40,18 +43,15 @@ export const getBanners = async (req: Request, res: Response) => {
         'location.division': { $regex: division as string, $options: 'i' },
         'location.district': { $regex: district as string, $options: 'i' },
         'location.upazila': { $regex: upazila as string, $options: 'i' }
-      }).sort({ order: 1 });
+      })
+        .select('imageUrl title order category location')
+        .sort({ order: 1 })
+        .lean();
       
-      console.log(`🔍 Priority 1 Query:`, {
-        'location.division': { $regex: division as string, $options: 'i' },
-        'location.district': { $regex: district as string, $options: 'i' },
-        'location.upazila': { $regex: upazila as string, $options: 'i' }
-      });
       console.log(`📊 Priority 1 Results: ${exactMatch.length} banners found`);
       
       if (exactMatch.length > 0) {
         console.log(`✅ Priority 1: Found ${exactMatch.length} exact match banners (Division + District + Upazila)`);
-        console.log(`📄 Banners:`, exactMatch.map(b => ({ id: b._id, location: b.location })));
         return res.json(exactMatch);
       }
       console.log('⏭️ Priority 1: No exact match, trying next...');
@@ -68,13 +68,15 @@ export const getBanners = async (req: Request, res: Response) => {
           { 'location.upazila': null },
           { 'location.upazila': '' }
         ]
-      }).sort({ order: 1 });
+      })
+        .select('imageUrl title order category location')
+        .sort({ order: 1 })
+        .lean();
       
       console.log(`📊 Priority 2 Results: ${districtMatch.length} banners found`);
       
       if (districtMatch.length > 0) {
         console.log(`✅ Priority 2: Found ${districtMatch.length} district match banners (Division + District)`);
-        console.log(`📄 Banners:`, districtMatch.map(b => ({ id: b._id, location: b.location })));
         return res.json(districtMatch);
       }
       console.log('⏭️ Priority 2: No district match, trying next...');
@@ -90,13 +92,15 @@ export const getBanners = async (req: Request, res: Response) => {
           { 'location.district': null },
           { 'location.district': '' }
         ]
-      }).sort({ order: 1 });
+      })
+        .select('imageUrl title order category location')
+        .sort({ order: 1 })
+        .lean();
       
       console.log(`📊 Priority 3 Results: ${divisionMatch.length} banners found`);
       
       if (divisionMatch.length > 0) {
         console.log(`✅ Priority 3: Found ${divisionMatch.length} division match banners (Division only)`);
-        console.log(`📄 Banners:`, divisionMatch.map(b => ({ id: b._id, location: b.location })));
         return res.json(divisionMatch);
       }
       console.log('⏭️ Priority 3: No division match, trying global...');
@@ -111,7 +115,10 @@ export const getBanners = async (req: Request, res: Response) => {
         { 'location.division': null },
         { 'location.division': '' }
       ]
-    }).sort({ order: 1 });
+    })
+      .select('imageUrl title order category location')
+      .sort({ order: 1 })
+      .lean();
     
     console.log(`✅ Priority 4: Returning ${globalBanners.length} global banners (fallback)`);
     res.json(globalBanners);
